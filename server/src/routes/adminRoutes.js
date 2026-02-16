@@ -1,21 +1,36 @@
 import express from "express";
-import auth from "../middleware/auth.js";
-import permit from "../middleware/roles.js";
 import {
   addHostel,
-  assignHostelToYear,
-  assignHostelToStudent,
-  addRooms
+  getHostels,
+  updateHostel,
+  addRoom,
+  getRooms,
+  massAddRooms,
+  allocateBatch,
+  getAllocations,
+  allocateStudent,
+  createStaff,
+  updateBatchRule
 } from "../controllers/adminController.js";
+
+import { protect, allowRoles } from "../middleware/auth.js";
 
 const router = express.Router();
 
-router.get("/dashboard", auth, permit("admin"), (req,res)=>{
-  res.json({msg:"Welcome Admin"});
-});
-router.post("/add-hostel", auth, permit("admin"), addHostel);
-router.post("/assign-year", auth, permit("admin"), assignHostelToYear);
-router.post("/assign-student", auth, permit("admin"), assignHostelToStudent);
-router.post("/add-rooms", auth, permit("admin"), addRooms);
+router.post("/hostels", protect, allowRoles("admin"), addHostel);
+router.get("/hostels", protect, allowRoles("admin"), getHostels);
+router.put("/hostels/:id", protect, allowRoles("admin"), updateHostel);
+
+router.post("/rooms", protect, allowRoles("admin"), addRoom);
+router.post("/rooms/mass", protect, allowRoles("admin"), massAddRooms);
+router.get("/rooms/:hostelId", protect, allowRoles("admin"), getRooms);
+
+router.post("/allocations/batch", protect, allowRoles("admin"), allocateBatch);
+router.get("/allocations/batch", protect, allowRoles("admin"), getAllocations);
+router.put("/allocations/batch/:id", protect, allowRoles("admin"), updateBatchRule);
+
+router.post("/allocations/student", protect, allowRoles("admin"), allocateStudent);
+
+router.post("/staff", protect, allowRoles("admin"), createStaff);
 
 export default router;

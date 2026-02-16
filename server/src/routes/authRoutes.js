@@ -1,5 +1,6 @@
 import express from "express";
 import { signup, login, sendOtp, verifyOtp, forgotPassword, resetPassword } from "../controllers/authController.js";
+import { protect, allowRoles } from "../middleware/auth.js";
 const router = express.Router();
 
 router.post("/send-otp", sendOtp);

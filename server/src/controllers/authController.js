@@ -109,10 +109,11 @@ export const signup = async (req, res) => {
     await Otp.deleteOne({ email });
 
     const token = jwt.sign(
-      { id: user._id, role: user.role },
+      { id: user._id, role: user.role, tv: user.tokenVersion },
       process.env.JWT_SECRET,
       { expiresIn: "7d" }
     );
+
 
     res.json({ msg: "Signup successful", token, role: user.role });
   } catch (err) {
@@ -130,10 +131,11 @@ export const login = async (req, res) => {
   if (!ok) return res.status(400).json({ msg: "Invalid credentials" });
 
   const token = jwt.sign(
-    { id: user._id, role: user.role },
+    { id: user._id, role: user.role, tv: user.tokenVersion },
     process.env.JWT_SECRET,
     { expiresIn: "7d" }
   );
+
   res.json({ token, role: user.role });
 };
 

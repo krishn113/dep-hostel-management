@@ -20,6 +20,7 @@ const userSchema = new mongoose.Schema({
     match: /^[0-9]{10}$/
   },
   hostelId: { type: mongoose.Schema.Types.ObjectId, ref: "Hostel" },
+  tokenVersion: { type: Number, default: 0 },
   roomNumber: String
 },{ timestamps:true });
 
