@@ -1,36 +1,73 @@
-# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
-
-# dependencies
-/node_modules
-/.pnp
-.pnp.js
-
-# testing
-/coverage
-
-# next.js
-/.next/
-/out/
-
-# production
-/build
-
-# misc
-.DS_Store
-*.pem
-
-# debug
+# ============================
+# Root
+# ============================
+node_modules/
+*.log
 npm-debug.log*
-yarn-debug.log*
 yarn-error.log*
-
-# local env files
-.env*.local
+pnpm-debug.log*
 .env
+.env.*
 
-# vercel
-.vercel
+# ============================
+# Server (MERN Backend)
+# ============================
+server/node_modules/
+server/.env
+server/.env.*
+server/data/
+server/logs/
+server/uploads/
+server/dist/
+server/build/
 
-# typescript
-*.tsbuildinfo
-next-env.d.ts
+# ============================
+# Client (Next.js + Tailwind)
+# ============================
+client/node_modules/
+client/.next/
+client/out/
+client/build/
+client/dist/
+client/.env
+client/.env.*
+client/.vercel/
+
+# ============================
+# PWA generated files
+# ============================
+client/public/sw.js
+client/public/workbox-*.js
+client/public/worker-*.js
+client/public/precache-manifest*.js
+
+# ============================
+# Tailwind / PostCSS cache
+# ============================
+client/.postcss-cache/
+
+# ============================
+# VS Code
+# ============================
+.vscode/
+!.vscode/settings.json
+!.vscode/extensions.json
+
+# ============================
+# OS
+# ============================
+.DS_Store
+Thumbs.db
+
+# ============================
+# Testing & Coverage
+# ============================
+coverage/
+.nyc_output/
+
+# ============================
+# Temporary files
+# ============================
+*.swp
+*.swo
+*.tmp
