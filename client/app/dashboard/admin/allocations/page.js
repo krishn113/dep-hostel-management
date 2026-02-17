@@ -1,197 +1,226 @@
 "use client";
 import { useState, useEffect } from "react";
-import axios from "@/lib/axios";
-
-const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";
+import api from "@/utils/api";
+import { Building2, Plus, Pencil, Users } from "lucide-react";
 
 export default function Allocations() {
-    const [hostels, setHostels] = useState([]);
-    const [allocations, setAllocations] = useState([]);
-    const [ruleForm, setRuleForm] = useState({ year: "2025", gender: "Male", degreeType: "B.Tech", hostelId: "" });
-    const [studentForm, setStudentForm] = useState({ email: "", hostelId: "", roomNumber: "" });
+  const [hostels, setHostels] = useState([]);
+  const [allocations, setAllocations] = useState([]);
+  const [editingId, setEditingId] = useState(null);
 
-    const fetchData = async () => {
-        try {
-            const [hRes, aRes] = await Promise.all([
-                axios.get(`${API}/admin/hostels`),
-                axios.get(`${API}/admin/allocations/batch`),
-            ]);
-            setHostels(hRes.data);
-            setAllocations(aRes.data);
-            if (hRes.data.length > 0) {
-                setRuleForm(prev => ({ ...prev, hostelId: hRes.data[0]._id }));
-                setStudentForm(prev => ({ ...prev, hostelId: hRes.data[0]._id }));
-            }
-        } catch (err) {
-            console.error(err);
-        }
-    };
+  const [ruleForm, setRuleForm] = useState({
+    year: "2025",
+    gender: "Male",
+    degreeType: "B.Tech",
+    hostelId: "",
+  });
 
-    useEffect(() => {
-        fetchData();
-    }, []);
+  const [studentForm, setStudentForm] = useState({
+    email: "",
+    hostelId: "",
+    roomNumber: "",
+  });
 
-    const handleRuleSubmit = async () => {
-        try {
-            await axios.post(`${API}/admin/allocations/batch`, ruleForm);
-            alert("Rule Saved");
-            fetchData();
-        } catch (err) {
-            alert("Failed to save rule");
-        }
-    };
+  useEffect(() => {
+    fetchData();
+  }, []);
 
-    const handleStudentAllocate = async () => {
-        try {
-            await axios.post(`${API}/admin/allocations/student`, studentForm);
-            alert("Student Allocated");
-        } catch (err) {
-            alert(err.response?.data?.msg || "Failed");
-        }
-    };
+  const fetchData = async () => {
+    const [hRes, aRes] = await Promise.all([
+      api.get("/admin/hostels"),
+      api.get("/admin/allocations/batch"),
+    ]);
 
-    return (
-        <div className="space-y-10">
-            {/* Batch Allocation */}
-            <section>
-                <h2 className="text-xl font-bold mb-4">Batch Allocation Rules</h2>
-                <div className="flex flex-wrap gap-4 items-end bg-gray-50 p-4 rounded-lg mb-6">
-                    <div>
-                        <label className="block text-xs font-medium uppercase text-gray-500 mb-1">Year</label>
-                        <input
-                            className="p-2 border rounded w-32"
-                            value={ruleForm.year}
-                            onChange={e => setRuleForm({ ...ruleForm, year: e.target.value })}
-                            placeholder="2022"
-                        />
-                    </div>
-                    <div>
-                        <label className="block text-xs font-medium uppercase text-gray-500 mb-1">Degree</label>
-                        <select
-                            className="p-2 border rounded w-32"
-                            value={ruleForm.degreeType}
-                            onChange={e => setRuleForm({ ...ruleForm, degreeType: e.target.value })}
-                        >
-                            <option value="B.Tech">B.Tech</option>
-                            <option value="M.Tech">M.Tech</option>
-                            <option value="PhD">PhD</option>
-                            <option value="MSc">MSc</option>
-                            <option value="All">All</option>
-                        </select>
-                    </div>
-                    <div>
-                        <label className="block text-xs font-medium uppercase text-gray-500 mb-1">Gender</label>
-                        <select
-                            className="p-2 border rounded w-32"
-                            value={ruleForm.gender}
-                            onChange={e => setRuleForm({ ...ruleForm, gender: e.target.value })}
-                        >
-                            <option value="Male">Male</option>
-                            <option value="Female">Female</option>
-                        </select>
-                    </div>
-                    <div>
-                        <label className="block text-xs font-medium uppercase text-gray-500 mb-1">Hostel</label>
-                        <select
-                            className="p-2 border rounded w-48"
-                            value={ruleForm.hostelId}
-                            onChange={e => setRuleForm({ ...ruleForm, hostelId: e.target.value })}
-                        >
-                            {hostels.map(h => <option key={h._id} value={h._id}>{h.name} ({h.type})</option>)}
-                        </select>
-                    </div>
-                    <button
-                        onClick={handleRuleSubmit}
-                        className="bg-indigo-600 text-white px-6 py-2 rounded hover:bg-indigo-700"
-                    >
-                        Save Rule
-                    </button>
-                </div>
+    setHostels(hRes.data);
+    setAllocations(aRes.data);
 
-                <div className="bg-white border rounded-lg overflow-hidden">
-                    {hostels.map(h => (
-                    <div key={h._id} className="mb-8">
-                        <h3 className="text-lg font-semibold mb-2 text-indigo-700">
-                        {h.name} ({h.type})
-                        </h3>
+    if (hRes.data.length > 0) {
+      setRuleForm(prev => ({ ...prev, hostelId: hRes.data[0]._id }));
+      setStudentForm(prev => ({ ...prev, hostelId: hRes.data[0]._id }));
+    }
+  };
 
-                        <table className="min-w-full bg-white border rounded">
-                        <thead className="bg-gray-100">
-                            <tr>
-                            <th className="px-4 py-2">Year</th>
-                            <th className="px-4 py-2">Degree</th>
-                            <th className="px-4 py-2">Gender</th>
-                            <th className="px-4 py-2">Action</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {allocations
-                            .filter(a => a.hostelId?._id === h._id)
-                            .map(a => (
-                                <tr key={a._id} className="border-t">
-                                <td className="px-4 py-2">{a.year}</td>
-                                <td className="px-4 py-2">{a.degreeType}</td>
-                                <td className="px-4 py-2">{a.gender}</td>
-                                <td className="px-4 py-2">
-                                    <button
-                                    onClick={() => startEdit(a)}
-                                    className="text-indigo-600 hover:underline"
-                                    >
-                                    Edit
-                                    </button>
-                                </td>
-                                </tr>
-                            ))}
-                        </tbody>
-                        </table>
-                    </div>
-                    ))}
+  const handleRuleSubmit = async () => {
+    try {
+      if (editingId) {
+        await api.put(`/admin/allocations/batch/${editingId}`, ruleForm);
+        alert("Rule Updated");
+      } else {
+        await api.post("/admin/allocations/batch", ruleForm);
+        alert("Rule Created");
+      }
 
-                </div>
-            </section>
+      setEditingId(null);
+      fetchData();
+    } catch {
+      alert("Failed");
+    }
+  };
 
-            {/* Individual Allocation */}
-            <section>
-                <h2 className="text-xl font-bold mb-4">Individual Student Override</h2>
-                <div className="bg-white p-6 border rounded-lg shadow-sm max-w-2xl">
-                    <div className="grid grid-cols-2 gap-4">
-                        <div className="col-span-2">
-                            <label className="block text-sm font-medium mb-1">Student Email</label>
-                            <input
-                                className="w-full p-2 border rounded"
-                                placeholder="student@iitrpr.ac.in"
-                                value={studentForm.email}
-                                onChange={e => setStudentForm({ ...studentForm, email: e.target.value })}
-                            />
-                        </div>
-                        <div>
-                            <label className="block text-sm font-medium mb-1">Assign Hostel</label>
-                            <select
-                                className="w-full p-2 border rounded"
-                                value={studentForm.hostelId}
-                                onChange={e => setStudentForm({ ...studentForm, hostelId: e.target.value })}
-                            >
-                                {hostels.map(h => <option key={h._id} value={h._id}>{h.name}</option>)}
-                            </select>
-                        </div>
-                        <div>
-                            <label className="block text-sm font-medium mb-1">Assign Room</label>
-                            <input
-                                className="w-full p-2 border rounded"
-                                placeholder="e.g. 101"
-                                value={studentForm.roomNumber}
-                                onChange={e => setStudentForm({ ...studentForm, roomNumber: e.target.value })}
-                            />
-                        </div>
-                    </div>
-                    <button
-                        onClick={handleStudentAllocate}
-                        className="mt-4 w-full bg-gray-800 text-white py-2 rounded hover:bg-black"
-                    >
-                        Allocate Student
-                    </button>
-                </div>
-            </section>
+  const startEdit = (rule) => {
+    setEditingId(rule._id);
+    setRuleForm({
+      year: rule.year,
+      gender: rule.gender,
+      degreeType: rule.degreeType,
+      hostelId: rule.hostelId._id,
+    });
+  };
+
+  const handleStudentAllocate = async () => {
+    try {
+      await api.post("/admin/allocations/student", studentForm);
+      alert("Student Allocated");
+    } catch {
+      alert("Failed");
+    }
+  };
+
+  return (
+    <div className="space-y-10">
+
+      {/* HEADER */}
+      <div>
+        <h1 className="text-4xl font-black text-slate-900">
+          Allocation Management
+        </h1>
+        <p className="text-slate-500 italic">
+          Manage hostel batch rules and individual overrides
+        </p>
+      </div>
+
+      {/* ================= RULE FORM ================= */}
+      <div className="bg-white rounded-[2rem] p-6 border border-slate-100 shadow-sm">
+        <h2 className="font-bold text-lg mb-4 flex items-center gap-2">
+          <Building2 size={18} /> Batch Allocation Rule
+        </h2>
+
+        <div className="grid md:grid-cols-4 gap-4">
+
+          <input
+            className="bg-slate-50 p-3 rounded-xl"
+            placeholder="Year"
+            value={ruleForm.year}
+            onChange={e => setRuleForm({ ...ruleForm, year: e.target.value })}
+          />
+
+          <select
+            className="bg-slate-50 p-3 rounded-xl"
+            value={ruleForm.degreeType}
+            onChange={e => setRuleForm({ ...ruleForm, degreeType: e.target.value })}
+          >
+            {["B.Tech","M.Tech","PhD","MSc","All"].map(d => (
+              <option key={d}>{d}</option>
+            ))}
+          </select>
+
+          <select
+            className="bg-slate-50 p-3 rounded-xl"
+            value={ruleForm.gender}
+            onChange={e => setRuleForm({ ...ruleForm, gender: e.target.value })}
+          >
+            <option>Male</option>
+            <option>Female</option>
+          </select>
+
+          <select
+            className="bg-slate-50 p-3 rounded-xl"
+            value={ruleForm.hostelId}
+            onChange={e => setRuleForm({ ...ruleForm, hostelId: e.target.value })}
+          >
+            {hostels.map(h => (
+              <option key={h._id} value={h._id}>
+                {h.name}
+              </option>
+            ))}
+          </select>
         </div>
-    );
+
+        <button
+          onClick={handleRuleSubmit}
+          className="mt-5 flex items-center gap-2 bg-indigo-600 text-white px-6 py-3 rounded-xl shadow-lg shadow-indigo-200 hover:-translate-y-1 transition"
+        >
+          <Plus size={16}/> {editingId ? "Update Rule" : "Add Rule"}
+        </button>
+      </div>
+
+      {/* ================= HOSTEL-WISE RULES ================= */}
+      <div className="space-y-6">
+        {hostels.map(hostel => (
+          <div key={hostel._id} className="bg-white rounded-[2rem] p-6 border shadow-sm">
+
+            <h3 className="font-bold text-lg text-indigo-700 mb-4 flex items-center gap-2">
+              <Building2 size={18}/> {hostel.name}
+            </h3>
+
+            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {allocations
+                .filter(a => a.hostelId?._id === hostel._id)
+                .map(rule => (
+                  <div key={rule._id}
+                    className="p-5 bg-slate-50 rounded-2xl border hover:shadow-md transition">
+
+                    <p className="font-bold text-slate-800">
+                      {rule.year} • {rule.degreeType}
+                    </p>
+                    <p className="text-sm text-slate-500">
+                      Gender: {rule.gender}
+                    </p>
+
+                    <button
+                      onClick={() => startEdit(rule)}
+                      className="mt-3 flex items-center gap-1 text-indigo-600 text-xs font-bold"
+                    >
+                      <Pencil size={14}/> Edit
+                    </button>
+                  </div>
+                ))}
+            </div>
+
+          </div>
+        ))}
+      </div>
+
+      {/* ================= INDIVIDUAL ================= */}
+      <div className="bg-white rounded-[2rem] p-6 border shadow-sm">
+        <h2 className="font-bold text-lg mb-4 flex items-center gap-2">
+          <Users size={18}/> Individual Student Override
+        </h2>
+
+        <div className="grid md:grid-cols-3 gap-4">
+          <input
+            className="bg-slate-50 p-3 rounded-xl"
+            placeholder="Student Email"
+            value={studentForm.email}
+            onChange={e => setStudentForm({ ...studentForm, email: e.target.value })}
+          />
+
+          <select
+            className="bg-slate-50 p-3 rounded-xl"
+            value={studentForm.hostelId}
+            onChange={e => setStudentForm({ ...studentForm, hostelId: e.target.value })}
+          >
+            {hostels.map(h => (
+              <option key={h._id} value={h._id}>{h.name}</option>
+            ))}
+          </select>
+
+          <input
+            className="bg-slate-50 p-3 rounded-xl"
+            placeholder="Room Number"
+            value={studentForm.roomNumber}
+            onChange={e => setStudentForm({ ...studentForm, roomNumber: e.target.value })}
+          />
+        </div>
+
+        <button
+          onClick={handleStudentAllocate}
+          className="mt-5 bg-emerald-600 text-white px-6 py-3 rounded-xl shadow-lg shadow-emerald-200 hover:-translate-y-1 transition"
+        >
+          Allocate Student
+        </button>
+      </div>
+
+    </div>
+  );
 }
