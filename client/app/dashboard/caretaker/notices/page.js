@@ -1,7 +1,7 @@
 "use client";
 import { useState, useEffect, useMemo } from "react";
 import DashboardLayout from "@/components/DashboardLayout";
-import api from "@/utils/api";
+import API from "@/lib/api";
 
 export default function NoticeDashboard() {
   const [notices, setNotices] = useState([]);
@@ -28,7 +28,7 @@ export default function NoticeDashboard() {
 
   const fetchNotices = async () => {
     try {
-      const res = await api.get("/notices");
+      const res = await API.get("/notices");
       setNotices(res.data);
     } catch (err) {
       console.error("Failed to fetch", err);
@@ -38,14 +38,14 @@ export default function NoticeDashboard() {
   const handleDeleteNotice = async (id) => {
     if (!confirm("Are you sure you want to delete this notice?")) return;
     try {
-      await api.delete(`/notices/${id}`);
+      await API.delete(`/notices/${id}`);
       setNotices(notices.filter(n => n._id !== id));
     } catch (err) { alert("Delete failed"); }
   };
 
   const handlePinNotice = async (id, currentPin) => {
     try {
-      await api.patch(`/notices/${id}`, { isPinned: !currentPin });
+      await API.patch(`/notices/${id}`, { isPinned: !currentPin });
       fetchNotices();
     } catch (err) { alert("Pinning failed"); }
   };
@@ -54,7 +54,7 @@ export default function NoticeDashboard() {
   try {
     const token = localStorage.getItem("token");
 
-    await api.post(
+    await API.post(
       "/notices",
       {
         title,

@@ -1,7 +1,7 @@
 "use client";
 import { useState, useEffect, useMemo } from "react";
 import DashboardLayout from "@/components/DashboardLayout";
-import api from "@/utils/api";
+import API from "@/lib/api";
 
 // HELPER FUNCTION: Place this OUTSIDE your component
 const getCommonSlots = (complaints) => {
@@ -33,7 +33,7 @@ const [statusFilter, setStatusFilter] = useState("All");
 
   const updateStatus = async (id, action, data = {}) => {
     try {
-      await api.patch(`/complaints/${id}/manage`, { action, ...data });
+      await API.patch(`/complaints/${id}/manage`, { action, ...data });
       // Refresh data
     } catch (err) { alert("Action failed"); }
   };
@@ -51,7 +51,7 @@ const filteredComplaints = complaints.filter(c => {
 useEffect(() => {
   const fetchComplaints = async () => {
     try {
-      const res = await api.get("/complaints"); // Verify this route matches your backend
+      const res = await API.get("/complaints"); // Verify this route matches your backend
       setComplaints(res.data);
     } catch (err) {
       console.error("Failed to fetch complaints", err);

@@ -1,7 +1,7 @@
 "use client";
 import { useState, useEffect, useRef } from "react";
 import DashboardLayout from "@/components/DashboardLayout";
-import api from "@/utils/api";
+import API from "@/lib/api";
 
 export default function StudentListPage() {
   const [students, setStudents] = useState([]);
@@ -19,8 +19,8 @@ const [statusFilter, setStatusFilter] = useState("All");
   const fetchData = async () => {
     try {
       const [studentRes, statsRes] = await Promise.all([
-        api.get("/caretaker/students"), // You need to add this route
-        api.get("/caretaker/room-stats")
+        API.get("/caretaker/students"), // You need to add this route
+        API.get("/caretaker/room-stats")
       ]);
       setStudents(studentRes.data.students || studentRes.data);
       setStats(statsRes.data);
@@ -37,7 +37,7 @@ const [statusFilter, setStatusFilter] = useState("All");
   const handleDownload = async () => {
     try {
       // Add timestamp to prevent caching
-      const response = await api.get(`/caretaker/download-students?t=${Date.now()}`, { responseType: 'blob' });
+      const response = await API.get(`/caretaker/download-students?t=${Date.now()}`, { responseType: 'blob' });
       const url = window.URL.createObjectURL(new Blob([response.data]));
       const link = document.createElement('a');
       link.href = url;
@@ -53,7 +53,7 @@ const [statusFilter, setStatusFilter] = useState("All");
     const formData = new FormData();
     formData.append("file", file);
     try {
-      const res = await api.post("/caretaker/upload-rooms", formData);
+      const res = await API.post("/caretaker/upload-rooms", formData);
       if (res.data.debugLog) {
         console.log("Backend Debug Log (Upload):", res.data.debugLog);
       }

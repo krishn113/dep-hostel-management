@@ -1,5 +1,5 @@
 "use client";
-import { createContext, useContext, useState } from "react";
+import { createContext, useContext, useState, useEffect } from "react";
 import API from "@/lib/api";   // ✅ import your axios instance
 
 const AuthContext = createContext(null);
@@ -32,6 +32,28 @@ export default function AuthProvider({ children }) {
       setLoading(false);
     }
   };
+
+ 
+useEffect(() => {
+  const loadUser = async () => {
+    const token = localStorage.getItem("token");
+    if (!token) return;
+
+    try {
+      setLoading(true);
+      // Calls your getMe controller which populates everything
+      const res = await API.get("/auth/me"); 
+      setUser(res.data); // This now includes year, gender, degreeType, etc.
+    } catch (err) {
+      console.error("Failed to load user profile:", err);
+      localStorage.removeItem("token");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  loadUser();
+}, []);
 
   const verifyOtp = async (email, otp) => {
     try {

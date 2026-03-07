@@ -41,25 +41,16 @@ export const createNotice = async (req, res) => {
 
 export const getNotices = async (req, res) => {
   try {
-    // 1. Log the user to see if hostelId is actually there
-    console.log("Fetching notices for user:", req.user);
-
-    // 2. Check if user has a hostelId
-    if (!req.user || !req.user.hostelId) {
-       // If no hostelId, they should not see any notices 
-       // to prevent global leaks to unassigned users.
-       return res.json([]);
-    }
-
-    // 3. Find notices specifically for this hostel ONLY
-    const notices = await Notice.find({ hostel: req.user.hostelId })
-      .populate("author", "name") // Optional: gets the name of the caretaker who posted
-      .sort({ createdAt: -1 });
+    const { hostel } = req.query; // This will be the ObjectId string
+    
+    const query = hostel ? { hostel: hostel } : {};
+    const notices = await Notice.find(query)
+      .sort({ isPinned: -1, createdAt: -1 })
+      .populate("author", "name");
 
     res.status(200).json(notices);
   } catch (error) {
-    console.error("GET NOTICES ERROR:", error); // Check your terminal for the red text!
-    res.status(500).json({ msg: "Server error", error: error.message });
+    res.status(500).json({ message: error.message });
   }
 };
 

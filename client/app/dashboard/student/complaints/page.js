@@ -2,7 +2,7 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "@/context/AuthContext";
 import DashboardLayout from "@/components/DashboardLayout";
-import api from "@/utils/api";
+import API from "@/lib/api";
 import { 
   Wrench, History, Eye, Plus, X, 
   Calendar as CalendarIcon, CheckCircle2, Clock, Ban 
@@ -29,7 +29,7 @@ export default function StudentComplaints() {
 
   const fetchMyComplaints = async () => {
     try {
-      const res = await api.get("/complaints/my-complaints");
+      const res = await API.get("/complaints/my-complaints");
       setComplaints(res.data);
     } catch (err) { 
       console.error("Fetch Error:", err); 
@@ -46,7 +46,7 @@ export default function StudentComplaints() {
     };
 
     try {
-      await api.post("/complaints", complaintData);
+      await API.post("/complaints", complaintData);
       setShowForm(false);
       setForm({ title: "", category: "Electrical", description: "", floor: "" });
       fetchMyComplaints();

@@ -5,7 +5,7 @@ import StatsGrid from "@/components/StatsGrid";
 import DataTable from "@/components/DataTable";
 import StatusBadge from "@/components/StatusBadge";
 import axios from "axios";
-import api from "@/utils/api";
+import API from "@/lib/api";
 import Link from "next/link";
 import NoticeForm from "@/components/NoticeForm";
 
@@ -33,14 +33,14 @@ export default function CaretakerDashboard() {
     try {
       setLoading(true);
       // Fetch User Info
-      const userRes = await api.get('/auth/me');
+      const userRes = await API.get('/auth/me');
       setCaretakerInfo(userRes.data);
 
       // Fetch Stats Parallel
       const [noticesRes, studentsRes, complaintsRes] = await Promise.all([
-        api.get('/notices'),
-        api.get('/caretaker/students'),
-        api.get('/complaints')
+        API.get('/notices'),
+        API.get('/caretaker/students'),
+        API.get('/complaints')
       ]);
 
       const notices = noticesRes.data || [];

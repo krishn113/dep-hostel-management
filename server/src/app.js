@@ -5,6 +5,7 @@ import authRoutes from "./routes/authRoutes.js";
 import adminRoutes from "./routes/adminRoutes.js";
 import complaintRoutes from "./routes/complaintRoutes.js";
 import caretakerRoutes from "./routes/caretakerRoutes.js";
+import allocationRoutes from "./routes/allocationRoutes.js";
 import path from "path";
 import { fileURLToPath } from "url";
 
@@ -41,6 +42,7 @@ app.use("/api/auth", authRoutes);
 app.use("/api/admin", adminRoutes);
 app.use("/api/complaints", complaintRoutes);
 app.use("/api/caretaker", caretakerRoutes);
+app.use("/api/allocations", allocationRoutes);
 
 
 export default app;

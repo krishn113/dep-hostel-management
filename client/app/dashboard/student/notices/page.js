@@ -2,30 +2,66 @@
 import { useState, useEffect, useMemo } from "react";
 import { useAuth } from "@/context/AuthContext";
 import DashboardLayout from "@/components/DashboardLayout";
-import api from "@/utils/api";
+import API from "@/lib/api";
 import { Bell, Search, Info, TriangleAlert, CalendarDays, Pin } from "lucide-react";
 
 export default function StudentNoticeBoard() {
   const { user } = useAuth();
   const [notices, setNotices] = useState([]);
+  const [hostelData, setHostelData] = useState(null);
   const [noticeSearch, setNoticeSearch] = useState("");
   const [activeCategory, setActiveCategory] = useState("All");
   const [expandedNoticeId, setExpandedNoticeId] = useState(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (user?.hostelName) fetchNotices();
+    if (user?.year && user?.gender && user?.degreeType) {
+      resolveHostelAndFetchNotices();
+    }else {
+    console.log("DEBUG: Waiting for user data...", user);
+  }
   }, [user]);
 
-  const fetchNotices = async () => {
-    try {
-      // Backend route should handle hostel filtering
-      const res = await api.get(`/notices?hostel=${user.hostelName}`);
-      setNotices(res.data);
-    } catch (err) {
-      console.error("Failed to fetch notices", err);
-    }
-  };
+const resolveHostelAndFetchNotices = async () => {
+  try {
+    setLoading(true);
+    console.log("DEBUG: Current User Data:", { 
+      year: user?.year, 
+      gender: user?.gender, 
+      degree: user?.degreeType 
+    });
 
+    const allocationRes = await API.get(`/allocations/find`, {
+      params: {
+        year: user.year,
+        gender: user.gender,
+        degreeType: user.degreeType
+      }
+    });
+
+    console.log("DEBUG: Allocation Response:", allocationRes.data);
+
+    if (allocationRes.data?.hostelId) {
+      const hostelObj = allocationRes.data.hostelId;
+      const hId = hostelObj._id || hostelObj; // Handle both populated and unpopulated
+      
+      setHostelData(hostelObj);
+
+      const noticeRes = await API.get(`/notices`, {
+        params: { hostel: hId }
+      });
+      
+      console.log("DEBUG: Notices received from Server:", noticeRes.data);
+      setNotices(noticeRes.data);
+    } else {
+      console.warn("DEBUG: No hostelId found in allocation response.");
+    }
+  } catch (err) {
+    console.error("DEBUG: Fetching Chain Failed:", err.response?.data || err.message);
+  } finally {
+    setLoading(false);
+  }
+};
   const filteredNotices = useMemo(() => {
     return notices
       .sort((a, b) => (b.isPinned - a.isPinned) || new Date(b.createdAt) - new Date(a.createdAt))
@@ -37,43 +73,37 @@ export default function StudentNoticeBoard() {
     <DashboardLayout role="student" activeTab="notices">
       <div className="max-w-5xl mx-auto space-y-8 animate-in fade-in duration-700">
         
-        {/* HEADER */}
-        <header className="flex flex-col md:flex-row md:items-end justify-between gap-4">
-          <div>
-            <h1 className="text-4xl font-black text-slate-900 tracking-tight">Notice Board</h1>
-            <p className="text-slate-500 font-medium">Official updates for <span className="text-indigo-600 font-bold">{user?.hostelName} Hostel</span></p>
-          </div>
-          <div className="bg-indigo-50 px-4 py-2 rounded-2xl flex items-center gap-2 border border-indigo-100">
-            <Bell className="text-indigo-600" size={18} />
-            <span className="text-indigo-700 text-xs font-black uppercase tracking-wider">{notices.length} Live Notices</span>
-          </div>
-        </header>
+       {/* HEADER */}
+        {/* COMPACT HEADER */}
+<header className="flex flex-col md:flex-row md:items-end justify-between gap-4">
+  <div>
+    <h1 className="text-4xl font-black text-slate-900 tracking-tight">Notice Board</h1>
+    <p className="text-slate-500 font-medium">
+      Official updates for <span className="text-indigo-600 font-bold">{hostelData?.name || "Allocated Hostel"}</span>
+    </p>
+  </div>
+  
+  <div className="flex flex-wrap items-center gap-2">
+    {/* Pinned Pill */}
+    <div className="bg-amber-50 px-3 py-1.5 rounded-xl flex items-center gap-2 border border-amber-100">
+      <Pin className="text-amber-500" size={14} />
+      <span className="text-amber-700 text-[10px] font-black uppercase tracking-wider">
+        {notices.filter(n => n.isPinned).length} Pinned
+      </span>
+    </div>
 
-        {/* SEARCH & FILTERS */}
-        <div className="bg-white p-3 rounded-[2rem] border border-slate-200 shadow-sm flex flex-col md:flex-row gap-3">
-          <div className="flex-1 relative">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
-            <input 
-              type="text" 
-              placeholder="Search announcements..." 
-              className="w-full bg-slate-50 border-none rounded-2xl py-3 pl-11 text-sm focus:ring-2 focus:ring-indigo-500 transition"
-              onChange={(e) => setNoticeSearch(e.target.value)}
-            />
-          </div>
-          <div className="flex gap-1 overflow-x-auto scrollbar-hide">
-            {["All", "Urgent", "Events", "Academic", "Maintenance"].map(cat => (
-              <button 
-                key={cat}
-                onClick={() => setActiveCategory(cat)}
-                className={`px-5 py-2 rounded-xl text-[10px] font-black uppercase transition-all ${
-                  activeCategory === cat ? 'bg-indigo-600 text-white shadow-lg' : 'text-slate-500 hover:bg-slate-100'
-                }`}
-              >
-                {cat}
-              </button>
-            ))}
-          </div>
-        </div>
+    {/* New Pill */}
+    <div className="bg-emerald-50 px-3 py-1.5 rounded-xl flex items-center gap-2 border border-emerald-100">
+      <Bell className="text-emerald-600" size={14} />
+      <span className="text-emerald-700 text-[10px] font-black uppercase tracking-wider">
+        {notices.filter(n => {
+          const yesterday = new Date(Date.now() - 86400000);
+          return new Date(n.createdAt) > yesterday;
+        }).length} New
+      </span>
+    </div>
+  </div>
+</header>
 
         {/* FEED */}
         <div className="space-y-6">

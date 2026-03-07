@@ -3,10 +3,49 @@ import { useState, useEffect } from "react";
 import { useAuth } from "@/context/AuthContext";
 import DashboardLayout from "@/components/DashboardLayout";
 import StatsGrid from "@/components/StatsGrid";
+import API from "@/lib/api";
 import { MessageSquare, Bell, FileText, ArrowUpRight } from "lucide-react";
 export default function StudentDashboard() {
   const { user } = useAuth();
   const [activeTab, setActiveTab] = useState("overview");
+  const [latestNotice, setLatestNotice] = useState(null);
+
+useEffect(() => {
+  const fetchLatestNotice = async () => {
+    // Only fetch if the user profile from AuthContext is fully loaded
+    if (!user?.year || !user?.gender || !user?.degreeType) return;
+
+    try {
+      const allocRes = await API.get("/allocations/find", {
+        params: { 
+          year: user.year, 
+          gender: user.gender, 
+          degreeType: user.degreeType 
+        }
+      });
+
+      const hostelId = allocRes.data?.hostelId?._id || allocRes.data?.hostelId;
+
+      if (hostelId) {
+        const noticeRes = await API.get("/notices", {
+          params: { hostel: hostelId }
+        });
+
+        if (noticeRes.data.length > 0) {
+          // Sort by createdAt descending to ensure the "Latest" is actually the newest
+          const sorted = noticeRes.data.sort((a, b) => 
+            new Date(b.createdAt) - new Date(a.createdAt)
+          );
+          setLatestNotice(sorted[0]); 
+        }
+      }
+    } catch (err) {
+      console.error("Dashboard Fetch Error:", err);
+    }
+  };
+
+  fetchLatestNotice();
+}, [user, activeTab]); // Adding activeTab here ensures it refreshes when you switch back to overview
 
   if (!user) return <div className="p-10 text-center text-indigo-600 font-bold animate-pulse">Loading Student Portal...</div>;
 
@@ -50,17 +89,27 @@ export default function StudentDashboard() {
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                <div className="p-8 bg-white border border-slate-100 rounded-[2.5rem] shadow-sm relative overflow-hidden group">
-                  <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
-                    <Bell size={80} />
-                  </div>
-                  <h3 className="font-bold text-slate-800 text-lg mb-2">Latest Notice 📢</h3>
-                  <p className="text-slate-500 text-sm leading-relaxed">
-                    The mess will serve special dinner today for the {user.hostelName} community at 8:00 PM.
-                  </p>
-                  <button onClick={() => setActiveTab('notices')} className="mt-4 text-indigo-600 text-xs font-black uppercase tracking-widest flex items-center gap-1">
-                    Read More <ArrowUpRight size={14} />
-                  </button>
-               </div>
+  <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
+    <Bell size={80} />
+  </div>
+  
+  <h3 className="font-bold text-slate-800 text-lg mb-2">
+    {latestNotice ? "Latest Notice 📢" : "No Notices Yet"}
+  </h3>
+  
+  <p className="text-slate-500 text-sm leading-relaxed">
+    {latestNotice 
+      ? latestNotice.title 
+      : `Check back later for updates regarding the ${user.hostelName} community.`}
+  </p>
+  
+  <button 
+  onClick={() => setActiveTab('notices')} // This keeps the user on the same page but switches the tab
+  className="mt-4 text-indigo-600 text-xs font-black uppercase tracking-widest flex items-center gap-1 hover:underline"
+>
+  {latestNotice ? "Read More" : "View All"} <ArrowUpRight size={14} />
+</button>
+</div>
 
                <div className="p-8 bg-indigo-600 rounded-[2.5rem] shadow-xl text-white shadow-indigo-200">
                   <h3 className="font-bold text-lg mb-2">Technician Visit 🛠️</h3>
