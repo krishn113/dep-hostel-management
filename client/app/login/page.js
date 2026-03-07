@@ -60,7 +60,7 @@ export default function Login() {
         />
 
         <div className="text-right mb-4">
-          <a href="/forgot-password" class="text-xs text-indigo-600 hover:underline">
+          <a href="/forgot-password" className="text-xs text-indigo-600 hover:underline">
             Forgot Password?
           </a>
         </div>

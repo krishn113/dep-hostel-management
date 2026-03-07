@@ -10,6 +10,11 @@ const userSchema = new mongoose.Schema({
   trim: true,
   index: true
   },
+  gender: {
+    type: String,
+    enum: ["Male", "Female"],
+    required: true
+  },
   password: { type: String, required: true },
   role: { type: String, enum: ["student","caretaker","warden","admin"], default: "student" },
   year: String,
