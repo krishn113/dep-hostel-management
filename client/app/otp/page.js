@@ -2,9 +2,8 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "../../context/AuthContext";
+import API from "@/lib/api";
 import axios from "axios";
-
-const API = process.env.NEXT_PUBLIC_API;
 
 export default function OTP() {
   const [otp, setOtp] = useState("");
@@ -24,20 +23,18 @@ export default function OTP() {
     try {
       setLoading(true);
 
-      // 1. Verify OTP
-      await axios.post(`${API}/auth/verify-otp`, {
+      await API.post("/auth/verify-otp", {
         email: tempUser.email,
         otp,
       });
 
-      // 2. Register User
-      const res = await axios.post(`${API}/auth/signup`, tempUser);
+      await API.post("/auth/signup", tempUser);
 
       alert("Signup Successful! Redirecting to login...");
       router.push("/login");
 
     } catch (err) {
-      alert(err.response?.data?.msg || "Verification failed");
+      alert(err.response?.data?.msg || err.response?.data?.error || "Verification failed");
     } finally {
       setLoading(false);
     }

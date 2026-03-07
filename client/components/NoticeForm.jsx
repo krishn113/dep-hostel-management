@@ -1,6 +1,6 @@
 "use client";
 import { useState, useRef } from "react";
-import API from "@/utils/api";
+import API from "@/lib/api";
 
 export default function NoticeForm({ isOpen, onClose, onSuccess }) {
   const [loading, setLoading] = useState(false);

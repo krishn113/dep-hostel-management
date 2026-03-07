@@ -19,10 +19,52 @@ const transporter = nodemailer.createTransport({
 // --- Hostels ---
 export const addHostel = async (req, res) => {
   try {
-    const { name, type } = req.body;
+    const { name, type, roomConfigs } = req.body;
+    
+    // 1. Create Hostel
     const hostel = await Hostel.create({ name, type });
-    res.json(hostel);
+
+    // 2. Create Rooms based on configs
+    if (Array.isArray(roomConfigs) && roomConfigs.length > 0) {
+      const roomsToCreate = [];
+      let totalRoomsCount = 0;
+      const prefixCount = { 1: 0, 2: 0, 3: 0 };
+
+      for (const config of roomConfigs) {
+        const capacity = parseInt(config.capacity);
+        const count = parseInt(config.rooms) || 0;
+
+        if (count > 0 && capacity > 0) {
+          const prefix = capacity === 1 ? 'S' : (capacity === 2 ? 'D' : (capacity === 3 ? 'T' : `C${capacity}-`));
+          
+          let roomType = "Single";
+          if (capacity === 2) roomType = "Double";
+          if (capacity === 3) roomType = "Triple";
+
+          for (let i = 1; i <= count; i++) {
+            prefixCount[capacity] = (prefixCount[capacity] || 0) + 1;
+            roomsToCreate.push({
+              roomNumber: `${prefix}${prefixCount[capacity]}`,
+              hostelId: hostel._id,
+              type: roomType
+            });
+            totalRoomsCount++;
+          }
+        }
+      }
+
+      if (roomsToCreate.length > 0) {
+        await Room.insertMany(roomsToCreate);
+        hostel.totalRooms = totalRoomsCount;
+        await hostel.save();
+      }
+    }
+
+    res.status(201).json(hostel);
   } catch (err) {
+    if (err.code === 11000) {
+      return res.status(400).json({ error: "Hostel with this name and type already exists." });
+    }
     res.status(500).json({ error: err.message });
   }
 };
@@ -40,7 +82,16 @@ export const updateHostel = async (req, res) => {
   try {
     const { id } = req.params;
     const { name, type } = req.body;
+    
+    // Check if another hostel with same name+type exists (excluding current)
+    const exists = await Hostel.findOne({ name, type, _id: { $ne: id } });
+    if (exists) {
+      return res.status(400).json({ error: "Hostel with this name and type already exists." });
+    }
+
     const hostel = await Hostel.findByIdAndUpdate(id, { name, type }, { new: true });
+    if (!hostel) return res.status(404).json({ error: "Hostel not found" });
+    
     res.json(hostel);
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -62,40 +113,7 @@ export const addRoom = async (req, res) => {
   }
 };
 
-export const massAddRooms = async (req, res) => {
-  try {
-    const { hostelId, startRoomNumber, count, capacity } = req.body;
-    const start = parseInt(startRoomNumber);
-    const quantity = parseInt(count);
-    const cap = parseInt(capacity);
-
-    const roomsToCreate = [];
-    for (let i = 0; i < quantity; i++) {
-      roomsToCreate.push({
-        hostelId,
-        roomNumber: (start + i).toString(),
-        capacity: cap
-      });
-    }
-
-    // Insert many (ordered: false to ignore duplicates if some exist)
-    try {
-      await Room.insertMany(roomsToCreate, { ordered: false });
-    } catch (e) {
-      // Ignore duplicate key errors, continue
-      console.log("Some rooms might have already existed (duplicates skipped).");
-    }
-
-    // Update total rooms count
-    const total = await Room.countDocuments({ hostelId });
-    await Hostel.findByIdAndUpdate(hostelId, { totalRooms: total });
-
-    res.json({ msg: `Attempted to add ${quantity} rooms. Current total: ${total}` });
-
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-}
+// massAddRooms removed - rooms are now added during hostel creation
 
 export const getRooms = async (req, res) => {
   try {
@@ -158,7 +176,7 @@ export const allocateStudent = async (req, res) => {
 
 export const createStaff = async (req, res) => {
   try {
-    const { name, email, role, hostelId } = req.body;
+    const { name, email, role, hostelId, gender } = req.body;
 
     if (!["warden", "caretaker"].includes(role))
       return res.status(400).json({ error: "Invalid role" });
@@ -175,7 +193,8 @@ export const createStaff = async (req, res) => {
       email,
       password: hashed,
       role,
-      hostelId
+      hostelId,
+      gender
     });
 
     // email credentials

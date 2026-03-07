@@ -5,7 +5,6 @@ import {
   updateHostel,
   addRoom,
   getRooms,
-  massAddRooms,
   allocateBatch,
   getAllocations,
   allocateStudent,
@@ -22,7 +21,6 @@ router.get("/hostels", protect, allowRoles("admin"), getHostels);
 router.put("/hostels/:id", protect, allowRoles("admin"), updateHostel);
 
 router.post("/rooms", protect, allowRoles("admin"), addRoom);
-router.post("/rooms/mass", protect, allowRoles("admin"), massAddRooms);
 router.get("/rooms/:hostelId", protect, allowRoles("admin"), getRooms);
 
 router.post("/allocations/batch", protect, allowRoles("admin"), allocateBatch);

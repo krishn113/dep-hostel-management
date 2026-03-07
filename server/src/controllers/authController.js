@@ -66,14 +66,20 @@ export const verifyOtp = async (req, res) => {
     const { email, otp } = req.body;
 
     const record = await Otp.findOne({ email });
-    if (!record || record.otp !== otp) {
-      return res.status(400).json({ msg: "Invalid or expired OTP" });
+
+    if (!record) {
+      return res.status(400).json({ msg: "OTP expired. Request a new one." });
+    }
+
+    if (record.otp !== otp.trim()) {
+      return res.status(400).json({ msg: "Incorrect OTP" });
     }
 
     record.verified = true;
     await record.save();
 
     res.json({ msg: "OTP verified successfully" });
+
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: "OTP verification failed" });
@@ -82,7 +88,7 @@ export const verifyOtp = async (req, res) => {
 
 export const signup = async (req, res) => {
   try {
-    const { name, email, password, year, entryNumber, degreeType, phone } = req.body;
+    const { name, email, password, year, entryNumber, degreeType, phone, gender } = req.body;
 
     if (!email.endsWith("@iitrpr.ac.in"))
       return res.status(400).json({ msg: "Only IIT Ropar email allowed" });
@@ -104,6 +110,7 @@ export const signup = async (req, res) => {
       entryNumber,
       degreeType,
       phone,
+      gender
     });
 
     await Otp.deleteOne({ email });
@@ -178,19 +185,32 @@ export const resetPassword = async (req, res) => {
     const { email, otp, newPassword } = req.body;
 
     const record = await Otp.findOne({ email });
-    if (!record || record.otp !== otp) {
-      return res.status(400).json({ msg: "Invalid or expired OTP" });
+
+    if (!record) {
+      return res.status(400).json({ msg: "OTP not found" });
+    }
+
+    if (record.otp.toString() !== otp.toString()) {
+      return res.status(400).json({ msg: "Invalid OTP" });
+    }
+
+    const user = await User.findOne({ email });
+
+    if (!user) {
+      return res.status(404).json({ msg: "User not found" });
     }
 
     const hashed = await bcrypt.hash(newPassword, 10);
-    await User.findOneAndUpdate({ email }, { password: hashed });
-    await User.updateOne({ email }, { tokenVersion: Date.now() });
 
-    await Otp.deleteOne({ email }); // cleanup
+    user.password = hashed;
+    user.tokenVersion = Date.now();
+    await user.save();
+
+    await Otp.deleteOne({ email });
 
     res.json({ msg: "Password reset successful" });
+
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
-}
-
+};

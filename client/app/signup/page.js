@@ -11,7 +11,8 @@ export default function Signup() {
     year: "",
     entryNumber: "",
     degreeType: "",
-    phone: ""
+    phone: "",
+    gender: ""
   });
 
   const [loading, setLoading] = useState(false);
@@ -20,7 +21,7 @@ export default function Signup() {
   const router = useRouter();
 
   const handle = async () => {
-    const { name, email, password, year, entryNumber, degreeType, phone } = form;
+    const { name, email, password, year, entryNumber, degreeType, phone, gender } = form;
 
     if (!email.endsWith("@iitrpr.ac.in"))
       return alert("Use IITRPR email");
@@ -38,7 +39,8 @@ export default function Signup() {
       year,
       entryNumber,
       degreeType,
-      phone
+      phone,
+      gender
     });
 
     const res = await sendOtp(email);
@@ -100,6 +102,15 @@ export default function Signup() {
             </div>
           )
         ))}
+        <select
+          className="w-full p-3 border rounded mb-2 bg-white"
+          value={form.gender}
+          onChange={(e) => setForm({ ...form, gender: e.target.value })}
+        >
+          <option value="">Select Gender</option>
+          <option value="Male">Male</option>
+          <option value="Female">Female</option>
+        </select>
 
         <button
           onClick={handle}
