@@ -68,6 +68,12 @@ useEffect(() => {
     }
   };
 
+  const logout = () => {
+    localStorage.removeItem("token");
+    setUser(null);
+    window.location.href = "/";
+  };
+
   return (
     <AuthContext.Provider
       value={{
@@ -78,6 +84,7 @@ useEffect(() => {
         tempUser,
         setTempUser,
         loading,
+        logout,
       }}
     >
       {children}
