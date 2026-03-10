@@ -2,6 +2,7 @@
 import { useState, useEffect } from "react";
 import API from "@/lib/api";
 import { Building2, Pencil, Plus, DoorOpen, Trash2} from "lucide-react";
+import DashboardLayout from "@/components/DashboardLayout";
 
 export default function AdminHostels() {
 
@@ -142,6 +143,7 @@ export default function AdminHostels() {
   );
 
   return (
+    <DashboardLayout role="admin" activeTab="hostels">
     <div className="w-full px-8 py-6 space-y-10">
 
       {/* HEADER */}
@@ -368,5 +370,6 @@ export default function AdminHostels() {
       )}
 
     </div>
+    </DashboardLayout>
   );
 }

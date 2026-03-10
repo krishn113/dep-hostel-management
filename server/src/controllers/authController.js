@@ -1,5 +1,6 @@
 import User from "../models/User.js";
 import Otp from "../models/Otp.js";
+import YearAllocation from "../models/YearAllocation.js";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import nodemailer from "nodemailer";
@@ -102,6 +103,10 @@ export const signup = async (req, res) => {
 
     const hashed = await bcrypt.hash(password, 10);
 
+    // Auto-allocate hostel based on year, gender, and degreeType
+    const allocation = await YearAllocation.findOne({ year, gender, degreeType });
+    const hostelId = allocation ? allocation.hostelId : null;
+
     const user = await User.create({
       name,
       email,
@@ -110,7 +115,8 @@ export const signup = async (req, res) => {
       entryNumber,
       degreeType,
       phone,
-      gender
+      gender,
+      hostelId
     });
 
     await Otp.deleteOne({ email });

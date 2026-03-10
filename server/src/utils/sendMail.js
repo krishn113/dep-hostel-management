@@ -27,17 +27,12 @@ export const sendGuestHouseMail = async (wardenEmail, bookingData, pdfPath) => {
     subject: "New Guest House Booking Request",
 
     html: `
-      <h2>New Guest House Booking Request</h2>
+      <h4>New Guest House Booking Request</h4>
 
-      <p><b>Guest Name:</b> ${bookingData.guestName}</p>
-      <p><b>Contact:</b> ${bookingData.contactNumber}</p>
-      <p><b>No. of Guests:</b> ${bookingData.numGuests}</p>
-      <p><b>No. of Rooms:</b> ${bookingData.numRooms}</p>
-      <p><b>Room Type:</b> ${bookingData.roomType}</p>
-
-      <p><b>Arrival:</b> ${bookingData.arrivalDate}</p>
-      <p><b>Departure:</b> ${bookingData.departureDate}</p>
-
+      <p><b>Applicant Name:</b> ${bookingData.applicantName}</p>
+      <p><b>Applicant Department:</b> ${bookingData.applicantDepartment}</p>
+      <p><b>Entry No. :</b> ${bookingData.applicantEntryNo}</p>
+      <p><b>Mobile No. :</b> ${bookingData.applicantMobileNo}</p>
       <p>Please review the attached document.</p>
     `,
 

@@ -2,6 +2,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import API from "@/lib/api";
+import toast from "react-hot-toast";
 
 export default function ForgotPassword() {
   const [email, setEmail] = useState("");
@@ -10,7 +11,7 @@ export default function ForgotPassword() {
 
   const handle = async () => {
     if (!email.endsWith("@iitrpr.ac.in")) {
-      alert("Use IITRPR email");
+      toast.error("Please use your IIT Ropar email");
       return;
     }
 
@@ -19,39 +20,67 @@ export default function ForgotPassword() {
 
       await API.post("/auth/forgot-password", { email });
 
+      toast.success("OTP sent to your email");
+
       router.push(`/reset-password?email=${encodeURIComponent(email)}`);
 
     } catch (err) {
       console.error(err);
-      alert(err.response?.data?.msg || "Failed to send OTP");
+      toast.error(err.response?.data?.msg || "Failed to send OTP");
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-[#f5f7fb]">
-      <div className="bg-white p-6 rounded-xl shadow w-80">
-        <h2 className="text-xl font-bold mb-3">Forgot Password</h2>
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-indigo-50 to-blue-100 px-4">
+      
+      <div className="w-full max-w-md bg-white p-8 rounded-2xl shadow-xl">
 
-        <p className="text-sm text-gray-600 mb-4">
-          Enter your email to receive an OTP.
+        {/* Logo */}
+        <div className="flex justify-center mb-4">
+          <img
+            src="/iitrpr-logo.png"
+            alt="IIT Ropar"
+            className="h-14"
+          />
+        </div>
+
+        <h2 className="text-2xl font-bold text-center text-gray-800 mb-2">
+          Forgot Password
+        </h2>
+
+        <p className="text-sm text-gray-500 text-center mb-6">
+          Enter your IIT Ropar email to receive an OTP
         </p>
 
-        <input
-          className="w-full p-3 border rounded mb-4"
-          placeholder="Email (@iitrpr.ac.in)"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-        />
+        <div className="space-y-4">
 
-        <button
-          onClick={handle}
-          disabled={loading}
-          className="w-full bg-indigo-600 text-white py-2 rounded-lg disabled:opacity-50"
+          <input
+            type="email"
+            placeholder="IITRPR Email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            className="w-full p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+          />
+
+          <button
+            onClick={handle}
+            disabled={loading}
+            className="w-full bg-indigo-600 hover:bg-indigo-700 transition text-white py-3 rounded-lg font-medium disabled:opacity-50"
+          >
+            {loading ? "Sending OTP..." : "Send OTP"}
+          </button>
+
+        </div>
+
+        <p
+          onClick={() => router.push("/login")}
+          className="text-center text-sm text-indigo-600 hover:underline mt-6 cursor-pointer"
         >
-          {loading ? "Sending OTP..." : "Send OTP"}
-        </button>
+          Back to Login
+        </p>
+
       </div>
     </div>
   );

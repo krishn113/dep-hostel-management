@@ -30,6 +30,11 @@ export default function StudentForms() {
 
   const [myForms, setMyForms] = useState({ leavingForms: [], guestHouseForms: [] });
   const [loading, setLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState("leaving");
+
+  // Filter States
+  const [statusFilter, setStatusFilter] = useState("All");
+  const [dateFilter, setDateFilter] = useState("");
 
   // Modal Toggles
   const [showLeaveModal, setShowLeaveModal] = useState(false);
@@ -84,13 +89,16 @@ export default function StudentForms() {
       body: JSON.stringify(guestForm)
     });
 
+    const data = await res.json();
+
     if (res.ok) {
       alert("Guest house request submitted successfully.");
       setGuestForm(initialGuestForm);
       setShowGuestModal(false);
       fetchMyForms();
     } else {
-      alert("Failed to submit guesthouse request");
+      console.log(data);
+      alert(data.message || "Failed to submit guesthouse request");
     }
   };
 
@@ -101,6 +109,13 @@ export default function StudentForms() {
       default: return 'bg-amber-400 text-white';
     }
   };
+
+  // Filter Logic for Hostel Leaving
+  const filteredLeaving = myForms.leavingForms.filter(form => {
+    const statusMatch = statusFilter === "All" || form.status === statusFilter;
+    const dateMatch = !dateFilter || new Date(form.leavingDate).toLocaleDateString() === new Date(dateFilter).toLocaleDateString();
+    return statusMatch && dateMatch;
+  });
 
   return (
     <DashboardLayout role="student" activeTab="forms">
@@ -155,9 +170,71 @@ export default function StudentForms() {
 
         {/* FEED: RENDERING HISTORY */}
         <div className="pt-8">
-          <div className="flex items-center gap-3 mb-8">
-            <History size={24} className="text-slate-400" />
-            <h2 className="text-2xl font-black text-slate-900 tracking-tight">My Submissions</h2>
+          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 mb-8">
+            <div className="flex items-center gap-3">
+              <History size={24} className="text-slate-400" />
+              <h2 className="text-2xl font-black text-slate-900 tracking-tight">My Submissions</h2>
+            </div>
+
+            <div className="flex flex-col sm:flex-row gap-4">
+              {/* TABS CONTROLS */}
+              <div className="flex space-x-2 bg-white p-1.5 rounded-[2rem] border border-slate-200 shadow-sm w-fit">
+                <button 
+                  onClick={() => setActiveTab("leaving")}
+                  className={`py-2 px-5 font-black uppercase tracking-widest text-[9px] rounded-2xl transition-all ${
+                    activeTab === "leaving" 
+                    ? "bg-blue-600 text-white shadow-md shadow-blue-100" 
+                    : "text-slate-500 hover:bg-slate-50"
+                  }`}
+                >
+                  Leaving
+                </button>
+                <button 
+                  onClick={() => setActiveTab("guesthouse")}
+                  className={`py-2 px-5 font-black uppercase tracking-widest text-[9px] rounded-2xl transition-all ${
+                    activeTab === "guesthouse" 
+                    ? "bg-indigo-600 text-white shadow-md shadow-indigo-100" 
+                    : "text-slate-500 hover:bg-slate-50"
+                  }`}
+                >
+                  Guest House
+                </button>
+              </div>
+
+              {/* FILTERS UI (Hostel Leaving Only) */}
+              {activeTab === "leaving" && (
+                <div className="flex items-center gap-3 bg-white p-1.5 rounded-[2rem] border border-slate-200 shadow-sm">
+                  <div className="flex items-center gap-1.5 pl-3">
+                     <span className="text-[9px] font-black uppercase text-slate-400 tracking-widest">Status:</span>
+                     <select 
+                       value={statusFilter}
+                       onChange={(e) => setStatusFilter(e.target.value)}
+                       className="bg-transparent border-none text-[9px] font-bold text-slate-700 focus:ring-0 cursor-pointer p-0 pr-6"
+                     >
+                       <option value="All">All</option>
+                       <option value="Pending">Pending</option>
+                       <option value="Approved">Approved</option>
+                       <option value="Rejected">Rejected</option>
+                     </select>
+                  </div>
+                  <div className="h-3 w-px bg-slate-200" />
+                  <div className="flex items-center gap-1.5 pr-3">
+                     <span className="text-[9px] font-black uppercase text-slate-400 tracking-widest">Date:</span>
+                     <input 
+                       type="date"
+                       value={dateFilter}
+                       onChange={(e) => setDateFilter(e.target.value)}
+                       className="bg-transparent border-none text-[9px] font-bold text-slate-700 focus:ring-0 cursor-pointer p-0"
+                     />
+                     {dateFilter && (
+                       <button onClick={() => setDateFilter("")} className="text-slate-400 hover:text-rose-500 ml-1">
+                         <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+                       </button>
+                     )}
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
 
           <div className="grid gap-8">
@@ -165,83 +242,89 @@ export default function StudentForms() {
               <div className="text-center py-20 bg-slate-50 rounded-[3rem] border-2 border-dashed border-slate-200">
                 <p className="text-slate-400 font-medium">Loading history...</p>
               </div>
-            ) : myForms.leavingForms.length === 0 && myForms.guestHouseForms.length === 0 ? (
-              <div className="text-center py-20 bg-slate-50 rounded-[3rem] border-2 border-dashed border-slate-200">
-                <p className="text-slate-400 font-medium">No forms submitted yet.</p>
-              </div>
             ) : (
               <div className="space-y-6">
                 
                 {/* Leaving Forms */}
-                {myForms.leavingForms.map((form) => (
-                  <div key={form._id} className="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-sm relative group hover:border-blue-100 transition-all">
-                    <div className={`absolute top-6 right-8 px-5 py-2 rounded-full text-[9px] font-black uppercase tracking-[0.15em] shadow-sm ${getStatusStyles(form.status)}`}>
-                      {form.status}
+                {activeTab === "leaving" && (
+                  filteredLeaving.length === 0 ? (
+                    <div className="text-center py-20 bg-slate-50 rounded-[3rem] border-2 border-dashed border-slate-200">
+                      <p className="text-slate-400 font-medium">No leaving forms match the selection.</p>
                     </div>
-                    
-                    <div className="flex gap-5">
-                      <div className="p-4 bg-blue-50 text-blue-500 rounded-3xl h-fit"><DoorOpen size={24}/></div>
-                      <div className="space-y-1 w-full">
-                        <div className="flex gap-2 items-center">
-                          <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Leaving Request</span>
+                  ) : (
+                    filteredLeaving.map((form) => (
+                      <div key={form._id} className="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-sm relative group hover:border-blue-100 transition-all">
+                        <div className={`absolute top-6 right-8 px-5 py-2 rounded-full text-[9px] font-black uppercase tracking-[0.15em] shadow-sm ${getStatusStyles(form.status)}`}>
+                          {form.status}
                         </div>
-                        <h3 className="text-2xl font-black text-slate-900 tracking-tight">{form.reason}</h3>
-                        <div className="pt-4 flex items-center gap-6 mt-2 border-t border-slate-50 text-sm font-medium text-slate-500">
-                           <p>Leaving: <span className="text-slate-800 font-bold">{new Date(form.leavingDate).toLocaleDateString()}</span></p>
-                           <p>Returning: <span className="text-slate-800 font-bold">{new Date(form.returnDate).toLocaleDateString()}</span></p>
-                           {form.duration && <p>Duration: <span className="text-slate-800 font-bold">{form.duration} days</span></p>}
+                        
+                        <div className="flex flex-col md:flex-row gap-5">
+                          <div className="p-4 bg-blue-50 text-blue-500 rounded-3xl h-fit w-fit"><DoorOpen size={24}/></div>
+                          <div className="space-y-1 w-full">
+                            <div className="flex gap-2 items-center">
+                              <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Leaving Request</span>
+                            </div>
+                            <h3 className="text-2xl font-black text-slate-900 tracking-tight">{form.reason}</h3>
+                            <div className="pt-4 flex flex-wrap items-center gap-6 mt-2 border-t border-slate-50 text-sm font-medium text-slate-500">
+                               <p>Leaving: <span className="text-slate-800 font-bold">{new Date(form.leavingDate).toLocaleDateString()}</span></p>
+                               <p>Returning: <span className="text-slate-800 font-bold">{new Date(form.returnDate).toLocaleDateString()}</span></p>
+                               {form.duration && <p>Duration: <span className="text-slate-800 font-bold">{form.duration} days</span></p>}
+                            </div>
+                            {form.nameOfParents && (
+                              <div className="flex flex-wrap items-center gap-6 text-sm font-medium text-slate-500 mt-2">
+                                 <p>Parents/Guardians: <span className="text-slate-800 font-bold">{form.nameOfParents}</span></p>
+                                 <p>Contact: <span className="text-slate-800 font-bold">{form.contactOfParents}</span></p>
+                              </div>
+                            )}
+                            {form.addressDuringLeave && (
+                              <div className="text-sm font-medium text-slate-500 mt-2">
+                                 <p>Address: <span className="text-slate-800 font-bold">{form.addressDuringLeave}</span></p>
+                              </div>
+                            )}
+                          </div>
                         </div>
-                        {form.nameOfParents && (
-                          <div className="flex items-center gap-6 text-sm font-medium text-slate-500 mt-2">
-                             <p>Parents/Guardians: <span className="text-slate-800 font-bold">{form.nameOfParents}</span></p>
-                             <p>Contact: <span className="text-slate-800 font-bold">{form.contactOfParents}</span></p>
-                          </div>
-                        )}
-                        {form.addressDuringLeave && (
-                          <div className="text-sm font-medium text-slate-500 mt-2">
-                             <p>Address: <span className="text-slate-800 font-bold">{form.addressDuringLeave}</span></p>
-                          </div>
-                        )}
                       </div>
-                    </div>
-                  </div>
-                ))}
+                    ))
+                  )
+                )}
 
                 {/* Guest Forms */}
-                {myForms.guestHouseForms.map((form) => (
-                  <div key={form._id} className="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-sm relative group hover:border-indigo-100 transition-all">
-                    <div className={`absolute top-6 right-8 px-5 py-2 rounded-full text-[9px] font-black uppercase tracking-[0.15em] shadow-sm ${getStatusStyles(form.status)}`}>
-                      {form.status}
+                {activeTab === "guesthouse" && (
+                  myForms.guestHouseForms.length === 0 ? (
+                    <div className="text-center py-20 bg-slate-50 rounded-[3rem] border-2 border-dashed border-slate-200">
+                      <p className="text-slate-400 font-medium">No guest house bookings found.</p>
                     </div>
-                    
-                    <div className="flex gap-5">
-                      <div className="p-4 bg-indigo-50 text-indigo-500 rounded-3xl h-fit"><Building2 size={24}/></div>
-                      <div className="space-y-1 w-full">
-                        <div className="flex gap-2 items-center">
-                          <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Guest House Booking</span>
-                        </div>
-                        <h3 className="text-2xl font-black text-slate-900 tracking-tight">{form.guestName} <span className="text-sm text-slate-400 font-medium tracking-normal ml-2">({form.purpose})</span></h3>
-                        
-                        <div className="pt-4 flex items-center gap-6 mt-2 border-t border-slate-50 text-sm font-medium text-slate-500 flex-wrap">
-                           <p>Room: <span className="text-slate-800 font-bold">{form.roomToBeBooked || form.roomType || 'N/A'}</span></p>
-                           <p>Guests: <span className="text-slate-800 font-bold">{form.numGuests}</span></p>
-                           <p>Rooms: <span className="text-slate-800 font-bold">{form.numRooms}</span></p>
-                           {form.occupancyType && <p>Occupancy: <span className="text-slate-800 font-bold">{form.occupancyType}</span></p>}
-                        </div>
-                        <div className="flex items-center gap-6 text-sm font-medium text-slate-500 mt-2 flex-wrap">
-                           <p>Check-In: <span className="text-slate-800 font-bold">{new Date(form.arrivalDate).toLocaleDateString()} {form.arrivalTime || ''}</span></p>
-                           <p>Check-Out: <span className="text-slate-800 font-bold">{new Date(form.departureDate).toLocaleDateString()} {form.departureTime || ''}</span></p>
-                           {form.paymentByGuest !== undefined && <p>Payment: <span className="text-slate-800 font-bold">{form.paymentByGuest ? 'By Guest' : 'By Applicant'}</span></p>}
-                        </div>
-                        {form.applicantName && (
-                          <div className="mt-3 bg-slate-50 p-3 rounded-lg border border-slate-100 text-xs text-slate-600">
-                             <p><span className="font-bold text-slate-700">Applicant:</span> {form.applicantName} ({form.applicantEntryNo}) - {form.applicantDepartment}</p>
+                  ) : (
+                    myForms.guestHouseForms
+                      .sort((a, b) => new Date(b.arrivalDate) - new Date(a.arrivalDate))
+                      .map((form) => (
+                        <div key={form._id} className="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-sm relative group hover:border-indigo-100 transition-all text-sm font-medium text-slate-500 flex-wrap">
+                          
+                          <div className="flex flex-col md:flex-row gap-5">
+                            <div className="p-4 bg-indigo-50 text-indigo-500 rounded-3xl h-fit w-fit"><Building2 size={24}/></div>
+                            <div className="space-y-1 w-full">
+                              <div className="flex gap-2 items-center">
+                                <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Guest House Booking</span>
+                              </div>
+                              <h3 className="text-2xl font-black text-slate-900 tracking-tight">{form.guestName} <span className="text-sm text-slate-400 font-medium tracking-normal ml-2">({form.purpose})</span></h3>
+                              
+                              <div className="pt-4 flex items-center gap-6 mt-2 border-t border-slate-50 text-sm font-medium text-slate-500 flex-wrap">
+                                 <p>Room: <span className="text-slate-800 font-bold">{form.roomToBeBooked || form.roomType || 'N/A'}</span></p>
+                                 <p>Guests: <span className="text-slate-800 font-bold">{form.numGuests}</span></p>
+                                 <p>Rooms: <span className="text-slate-800 font-bold">{form.numRooms}</span></p>
+                                 {form.occupancyType && <p>Occupancy: <span className="text-slate-800 font-bold">{form.occupancyType}</span></p>}
+                              </div>
+                              <div className="flex items-center gap-6 text-sm font-medium text-slate-500 mt-2 flex-wrap">
+                                 <p>Check-In: <span className="text-slate-800 font-bold">{new Date(form.arrivalDate).toLocaleDateString()} {form.arrivalTime || ''}</span></p>
+                                 <p>Check-Out: <span className="text-slate-800 font-bold">{new Date(form.departureDate).toLocaleDateString()} {form.departureTime || ''}</span></p>
+                                 {form.paymentByGuest !== undefined && <p>Payment: <span className="text-slate-800 font-bold">{form.paymentByGuest ? 'By Guest' : 'By Applicant'}</span></p>}
+                              </div>
+                            </div>
                           </div>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                ))}
+                        </div>
+                      ))
+                  )
+                )}
               </div>
             )}
           </div>

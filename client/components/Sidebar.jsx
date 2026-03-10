@@ -4,12 +4,13 @@ const navConfig = {
     { label: "Overview", icon: "📊", href: "/dashboard/caretaker" },
     { label: "Student List", icon: "👥", href: "/dashboard/caretaker/students" },
     { label: "Complaints", icon: "🛠️", href: "/dashboard/caretaker/complaints" },
-    { label: "Notices", icon: "📢", href: "/dashboard/caretaker/notices" }, // Changed Label
+    { label: "Notices", icon: "📢", href: "/dashboard/caretaker/notices" },
+    { label: "Forms", icon: "📝", href: "/dashboard/caretaker/forms" },
   ],
   warden: [
     { label: "Warden Dashboard", icon: "🏛️", href: "/dashboard/warden" },
     { label: "All Complaints", icon: "📋", href: "/dashboard/warden/complaints" },
-    { label: "Guest House Forms", icon: "🏨", href: "/dashboard/warden/guest-house" },
+    { label: "Guest House Forms", icon: "🏨", href: "/dashboard/warden/forms" },
   ],
 };
 

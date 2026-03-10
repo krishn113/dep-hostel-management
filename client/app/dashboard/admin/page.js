@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import API from "@/lib/api";
+import DashboardLayout from "@/components/DashboardLayout";
 
 import {
   Building2,
@@ -15,6 +16,7 @@ export default function AdminDashboard() {
 
   const [stats, setStats] = useState({});
   const [hostelOccupancy, setHostelOccupancy] = useState([]);
+  const [activeTab, setActiveTab] = useState("overview");
 
   useEffect(() => {
     fetchDashboard();
@@ -68,8 +70,9 @@ export default function AdminDashboard() {
   ];
 
   return (
-    <div className="w-full max-w-7xl mx-auto space-y-10">
 
+    <DashboardLayout role="admin" activeTab={activeTab} setActiveTab={setActiveTab}>
+          <div className="w-full max-w-7xl mx-auto space-y-10">
       {/* HEADER */}
       <div>
         <h1 className="text-4xl font-black text-slate-900">
@@ -122,16 +125,16 @@ export default function AdminDashboard() {
 
           {hostelOccupancy.map((h, i) => {
 
-            const percent =
-              h.capacity === 0
-                ? 0
-                : Math.round((h.occupied / h.capacity) * 100);
+          const percent =
+            h.capacity === 0
+              ? 0
+              : Math.min(100, Math.round((h.occupied / h.capacity) * 100));
 
             return (
               <div key={i}>
 
                 <div className="flex justify-between text-sm mb-2 font-semibold">
-                  <span>{h.name}</span>
+                  <span>{h.name} ({h.type})</span>
                   <span>{percent}%</span>
                 </div>
 
@@ -153,5 +156,6 @@ export default function AdminDashboard() {
       </div>
 
     </div>
+    </DashboardLayout>
   );
 }

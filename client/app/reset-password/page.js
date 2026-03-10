@@ -2,6 +2,8 @@
 import { useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import API from "@/lib/api";
+import toast from "react-hot-toast";
+import OtpInput from "@/components/OtpInput";
 
 function ResetPasswordContent() {
   const searchParams = useSearchParams();
@@ -11,11 +13,12 @@ function ResetPasswordContent() {
   const [otp, setOtp] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [loading, setLoading] = useState(false);
+
   const router = useRouter();
 
   const handle = async () => {
     if (!otp || !newPassword) {
-      alert("Fill all fields");
+      toast.error("Please fill all fields");
       return;
     }
 
@@ -28,52 +31,88 @@ function ResetPasswordContent() {
         newPassword,
       });
 
-      alert("Password reset successful! Please login.");
+      toast.success("Password reset successful 🎉");
       router.push("/login");
 
     } catch (err) {
-console.log(err.response);
-alert(err.response?.data?.msg || err.response?.data?.error || "Reset failed");
+      toast.error(
+        err.response?.data?.msg ||
+        err.response?.data?.error ||
+        "Reset failed"
+      );
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-[#f5f7fb]">
-      <div className="bg-white p-6 rounded-xl shadow w-80">
-        <h2 className="text-xl font-bold mb-3">Reset Password</h2>
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-indigo-50 to-blue-100 px-4">
 
-        <input
-          className="w-full p-3 border rounded mb-2"
-          placeholder="Email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          disabled={!!emailParam}
-        />
+      <div className="w-full max-w-md bg-white p-8 rounded-2xl shadow-xl">
 
-        <input
-          className="w-full p-3 border rounded mb-2"
-          placeholder="Enter OTP"
-          value={otp}
-          onChange={(e) => setOtp(e.target.value)}
-        />
+        {/* Logo */}
+        <div className="flex justify-center mb-5">
+          <img src="/iitrpr-logo.png" alt="IIT Ropar" className="h-14" />
+        </div>
 
-        <input
-          type="password"
-          className="w-full p-3 border rounded mb-4"
-          placeholder="New Password"
-          value={newPassword}
-          onChange={(e) => setNewPassword(e.target.value)}
-        />
+        <h2 className="text-2xl font-bold text-center text-gray-800 mb-1">
+          Reset Password
+        </h2>
 
-        <button
-          onClick={handle}
-          disabled={loading}
-          className="w-full bg-indigo-600 text-white py-2 rounded-lg disabled:opacity-50"
+        <p className="text-sm text-gray-500 text-center mb-6">
+          Enter your new password and OTP
+        </p>
+
+        <div className="flex flex-col items-center gap-4">
+
+          {/* Email */}
+          <input
+            type="email"
+            value={email}
+            disabled
+            className="w-full max-w-xs p-3 border rounded-lg bg-gray-50"
+          />
+
+          {/* New Password */}
+          <input
+            type="password"
+            placeholder="New Password"
+            value={newPassword}
+            onChange={(e) => setNewPassword(e.target.value)}
+            className="w-full max-w-xs p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-black"
+          />
+
+          {/* OTP */}
+          <div className="text-center">
+            <p className="text-sm text-gray-500 mb-2">
+              Enter 6-digit OTP
+            </p>
+
+            <OtpInput
+              length={6}
+              value={otp}
+              onChange={setOtp}
+            />
+          </div>
+
+          {/* Reset Button */}
+          <button
+            onClick={handle}
+            disabled={loading}
+            className="w-full max-w-xs bg-black hover:bg-gray-800 text-white py-3 rounded-lg font-medium disabled:opacity-50"
+          >
+            {loading ? "Resetting..." : "Reset Password"}
+          </button>
+
+        </div>
+
+        <p
+          onClick={() => router.push("/login")}
+          className="text-center text-sm text-indigo-600 hover:underline mt-6 cursor-pointer"
         >
-          {loading ? "Resetting..." : "Reset Password"}
-        </button>
+          Back to Login
+        </p>
+
       </div>
     </div>
   );
@@ -81,7 +120,7 @@ alert(err.response?.data?.msg || err.response?.data?.error || "Reset failed");
 
 export default function ResetPassword() {
   return (
-    <Suspense fallback={<div>Loading...</div>}>
+    <Suspense fallback={<div className="p-10 text-center">Loading...</div>}>
       <ResetPasswordContent />
     </Suspense>
   );

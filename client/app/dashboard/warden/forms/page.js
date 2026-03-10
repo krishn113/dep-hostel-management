@@ -1,10 +1,16 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import DashboardLayout from "@/components/DashboardLayout";
+import { Building2, Calendar, Clock, User, Phone, CreditCard } from "lucide-react";
 
 export default function WardenForms() {
   const [guestForms, setGuestForms] = useState([]);
   const [loading, setLoading] = useState(true);
+
+  // Filter States
+  const [arrivalFilter, setArrivalFilter] = useState("");
+  const [departureFilter, setDepartureFilter] = useState("");
 
   const fetchForms = async () => {
     try {
@@ -17,7 +23,9 @@ export default function WardenForms() {
 
       if (guessRes.ok) {
         const data = await guessRes.json();
-        setGuestForms(data);
+        // Sort guest forms by arrival date (newest first)
+        const sortedData = [...data].sort((a, b) => new Date(b.arrivalDate) - new Date(a.arrivalDate));
+        setGuestForms(sortedData);
       }
     } catch (error) {
       console.error("Failed to fetch warden forms", error);
@@ -30,65 +38,184 @@ export default function WardenForms() {
     fetchForms();
   }, []);
 
+  const getStatusStyles = (status) => {
+    switch (status) {
+      case 'Approved': return 'bg-emerald-500 text-white';
+      case 'Rejected': return 'bg-rose-500 text-white';
+      default: return 'bg-amber-400 text-white';
+    }
+  };
+
+  // Filter Logic
+  const filteredForms = guestForms.filter(form => {
+    const arrivalMatch = !arrivalFilter || new Date(form.arrivalDate).toLocaleDateString() === new Date(arrivalFilter).toLocaleDateString();
+    const departureMatch = !departureFilter || new Date(form.departureDate).toLocaleDateString() === new Date(departureFilter).toLocaleDateString();
+    return arrivalMatch && departureMatch;
+  });
+
   return (
-    <div className="p-8 max-w-6xl mx-auto space-y-8 animate-in fade-in duration-700">
-      <h1 className="text-3xl font-black text-slate-800 tracking-tight">Guest House Bookings</h1>
-      
-      {loading ? (
-        <div className="text-center py-20 bg-slate-50 rounded-3xl border-2 border-dashed border-slate-200 text-slate-400 font-medium italic">
-          Loading bookings...
-        </div>
-      ) : (
-        <div className="bg-white rounded-[2.5rem] shadow-sm border border-slate-200 overflow-hidden">
-          <div className="overflow-x-auto">
-            {guestForms.length === 0 ? (
-              <div className="p-20 text-center text-slate-400 font-medium italic">No guest house bookings found.</div>
-            ) : (
-              <table className="w-full text-left border-collapse">
-                <thead>
-                  <tr className="bg-slate-50 border-b border-slate-200 text-[10px] font-black uppercase text-slate-400 tracking-widest">
-                    <th className="p-6">Applicant</th>
-                    <th className="p-6">Guest Name (Contact)</th>
-                    <th className="p-6">Details</th>
-                    <th className="p-6">Dates</th>
-                    <th className="p-6">Status</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {guestForms.map(form => (
-                    <tr key={form._id} className="border-b border-slate-100 hover:bg-slate-50 transition-colors">
-                      <td className="p-6">
-                        <div className="font-bold text-slate-800">{form.applicantName || form.studentId?.name || "Unknown"}</div>
-                        <div className="text-xs text-slate-500 font-medium">{form.applicantEntryNo || form.studentId?.entryNumber || "N/A"}</div>
-                        <div className="text-[10px] text-slate-400 mt-1 font-bold">{form.applicantDepartment || ''}</div>
-                      </td>
-                      <td className="p-6 text-sm">
-                        <div className="font-bold text-slate-800">{form.guestName}</div>
-                        <div className="text-xs text-slate-500 font-medium">{form.contactNumber}</div>
-                        {form.paymentByGuest && <div className="text-[9px] font-black uppercase tracking-widest text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-full inline-block mt-2">Payment via Guest</div>}
-                      </td>
-                      <td className="p-6 text-sm text-slate-600">
-                        <div className="font-bold text-slate-700">{form.roomToBeBooked || form.roomType}</div>
-                        <div className="text-xs text-slate-500 font-medium mt-0.5">{form.numGuests} guests, {form.numRooms} room(s)</div>
-                        {form.occupancyType && <div className="text-[10px] text-slate-400 italic mt-1 font-medium">{form.occupancyType}</div>}
-                      </td>
-                      <td className="p-6 text-xs text-slate-600">
-                        <div className="mb-1"><span className="text-slate-400 font-bold mr-1">IN:</span> <span className="font-black text-slate-700">{new Date(form.arrivalDate).toLocaleDateString()}</span> <span className="text-xs text-slate-400 ml-1">{form.arrivalTime || ''}</span></div>
-                        <div><span className="text-slate-400 font-bold mr-1">OUT:</span> <span className="font-black text-slate-700">{new Date(form.departureDate).toLocaleDateString()}</span> <span className="text-xs text-slate-400 ml-1">{form.departureTime || ''}</span></div>
-                      </td>
-                      <td className="p-6">
-                        <span className={`text-[10px] font-black uppercase tracking-widest px-3 py-1 rounded-full shadow-sm ${form.status === 'Approved' ? 'bg-emerald-500 text-white' : form.status === 'Rejected' ? 'bg-rose-500 text-white' : 'bg-amber-400 text-white'}`}>
-                          {form.status}
-                        </span>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            )}
+    <DashboardLayout role="warden" activeTab="forms">
+      <div className="p-4 md:p-8 bg-slate-50 min-h-screen animate-in fade-in duration-700">
+        
+        {/* HEADER SECTION */}
+        <header className="mb-8 max-w-6xl mx-auto">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
+            <div>
+              <h1 className="text-3xl font-black text-slate-800 tracking-tight mb-2 uppercase">Guest House Bookings</h1>
+              <p className="text-slate-500 font-medium italic">View and monitor guest house applications across the hostel.</p>
+            </div>
+            
+            <div className="bg-white px-6 py-4 rounded-2xl border border-slate-200 shadow-sm">
+              <p className="text-[10px] font-black uppercase text-slate-400 tracking-widest mb-1">Total Records</p>
+              <p className="text-2xl font-black text-indigo-600">{filteredForms.length}</p>
+            </div>
           </div>
+
+          {/* FILTERS UI */}
+          <div className="flex flex-col sm:flex-row gap-4 bg-white p-3 rounded-[2rem] border border-slate-200 shadow-sm w-fit">
+            <div className="flex items-center gap-3 px-4">
+               <span className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Arrival:</span>
+               <input 
+                 type="date"
+                 value={arrivalFilter}
+                 onChange={(e) => setArrivalFilter(e.target.value)}
+                 className="bg-transparent border-none text-[10px] font-black text-slate-700 focus:ring-0 cursor-pointer p-0"
+               />
+               {arrivalFilter && (
+                 <button onClick={() => setArrivalFilter("")} className="text-slate-400 hover:text-rose-500">
+                   <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+                 </button>
+               )}
+            </div>
+            <div className="hidden sm:block h-6 w-px bg-slate-200" />
+            <div className="flex items-center gap-3 px-4">
+               <span className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Departure:</span>
+               <input 
+                 type="date"
+                 value={departureFilter}
+                 onChange={(e) => setDepartureFilter(e.target.value)}
+                 className="bg-transparent border-none text-[10px] font-black text-slate-700 focus:ring-0 cursor-pointer p-0"
+               />
+               {departureFilter && (
+                 <button onClick={() => setDepartureFilter("")} className="text-slate-400 hover:text-rose-500">
+                   <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+                 </button>
+               )}
+            </div>
+          </div>
+        </header>
+
+        <div className="max-w-6xl mx-auto space-y-6">
+          {loading ? (
+            <div className="text-center py-20 bg-white rounded-[2rem] border border-dashed border-slate-300">
+              <p className="text-slate-400 font-medium animate-pulse">Synchronizing records...</p>
+            </div>
+          ) : filteredForms.length === 0 ? (
+            <div className="text-center py-20 bg-white rounded-[2rem] border border-dashed border-slate-300">
+              <p className="text-slate-400 font-medium">No guest house bookings found.</p>
+            </div>
+          ) : (
+            <div className="grid gap-6">
+              {filteredForms.map(form => (
+                <div key={form._id} className="bg-white rounded-[2.5rem] p-8 border border-slate-200 shadow-sm flex flex-col lg:flex-row gap-8 relative overflow-hidden group hover:border-indigo-200 transition-all">
+                  <div className="absolute left-0 top-0 h-full w-2 bg-indigo-500" />
+                  
+                  <div className="flex-1 space-y-6">
+                    {/* Header Info */}
+                    <div className="flex items-center gap-3">
+                      <div className="p-3 bg-indigo-50 text-indigo-600 rounded-2xl">
+                        <Building2 size={24} />
+                      </div>
+                      <div>
+                        <span className="text-[10px] font-black uppercase text-indigo-500 tracking-widest">Guest House Detail</span>
+                        <h3 className="text-xl font-black text-slate-900 tracking-tight mt-0.5">
+                          {form.guestName}
+                        </h3>
+                      </div>
+                    </div>
+
+                    {/* Content Grid */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+                      {/* Applicant Info */}
+                      <div className="space-y-2">
+                        <div className="flex items-center gap-2 text-[10px] font-black uppercase text-slate-400 tracking-widest">
+                          <User size={12} />
+                          <span>Applicant</span>
+                        </div>
+                        <div>
+                          <p className="font-bold text-slate-800 text-sm">{form.applicantName || form.studentId?.name || "Unknown"}</p>
+                          <p className="text-xs text-slate-500 font-medium">{form.applicantEntryNo || form.studentId?.entryNumber || "N/A"}</p>
+                          <p className="text-[10px] text-slate-400 uppercase font-black mt-1 italic">{form.applicantDepartment || ''}</p>
+                        </div>
+                      </div>
+
+                      {/* Contact Info */}
+                      <div className="space-y-2">
+                        <div className="flex items-center gap-2 text-[10px] font-black uppercase text-slate-400 tracking-widest">
+                          <Phone size={12} />
+                          <span>Guest Contact</span>
+                        </div>
+                        <div>
+                          <p className="font-bold text-slate-800 text-sm">{form.contactNumber}</p>
+                          {form.paymentByGuest && (
+                            <div className="flex items-center gap-1.5 mt-2 text-[9px] font-black uppercase tracking-widest text-indigo-600 bg-indigo-50 px-2 py-1 rounded-lg w-fit">
+                              <CreditCard size={10} />
+                              <span>Self Payment</span>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Booking Details */}
+                      <div className="space-y-2">
+                        <div className="flex items-center gap-2 text-[10px] font-black uppercase text-slate-400 tracking-widest">
+                          <Building2 size={12} />
+                          <span>Accommodation</span>
+                        </div>
+                        <div>
+                          <p className="font-bold text-slate-800 text-sm">{form.roomToBeBooked || form.roomType}</p>
+                          <p className="text-xs text-slate-500 font-medium">{form.numGuests} guests, {form.numRooms} rooms</p>
+                          {form.occupancyType && <p className="text-[10px] text-slate-400 italic mt-1 font-medium">{form.occupancyType}</p>}
+                        </div>
+                      </div>
+
+                      {/* Dates */}
+                      <div className="space-y-2 border-l-0 lg:border-l border-slate-100 lg:pl-8">
+                        <div className="flex flex-col gap-3">
+                          <div className="space-y-1">
+                            <p className="text-[9px] font-black uppercase text-slate-400 tracking-widest">Check-In</p>
+                            <div className="flex items-center gap-2 text-sm font-bold text-slate-700 bg-slate-50 px-2 py-1 rounded-lg w-fit">
+                              <Calendar size={12} className="text-slate-400" />
+                              {new Date(form.arrivalDate).toLocaleDateString()}
+                              <span className="text-xs font-medium text-slate-400 ml-1">{form.arrivalTime || ''}</span>
+                            </div>
+                          </div>
+                          <div className="space-y-1">
+                            <p className="text-[9px] font-black uppercase text-slate-400 tracking-widest">Check-Out</p>
+                            <div className="flex items-center gap-2 text-sm font-bold text-slate-700 bg-slate-50 px-2 py-1 rounded-lg w-fit">
+                              <Clock size={12} className="text-slate-400" />
+                              {new Date(form.departureDate).toLocaleDateString()}
+                              <span className="text-xs font-medium text-slate-400 ml-1">{form.departureTime || ''}</span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Purpose Footer */}
+                    {form.purpose && (
+                      <div className="pt-4 border-t border-slate-50">
+                        <p className="text-[9px] font-black uppercase text-slate-400 tracking-widest mb-1">Purpose of visit</p>
+                        <p className="text-sm text-slate-600 font-medium italic">"{form.purpose}"</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
-      )}
-    </div>
+      </div>
+    </DashboardLayout>
   );
 }
