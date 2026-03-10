@@ -2,6 +2,7 @@
 import { useState, useEffect } from "react";
 import API from "@/lib/api";
 import { Building2, Plus, Pencil, Users, Trash2 } from "lucide-react";
+import DashboardLayout from "@/components/DashboardLayout";
 
 export default function Allocations() {
   const [hostels, setHostels] = useState([]);
@@ -110,6 +111,7 @@ export default function Allocations() {
   };
 
   return (
+    <DashboardLayout role="admin" activeTab="allocations">
     <div className="space-y-10">
 
       {/* HEADER */}
@@ -370,5 +372,8 @@ export default function Allocations() {
 )}
 
     </div>
+    
+</DashboardLayout>
   );
 }
+

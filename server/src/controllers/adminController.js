@@ -218,6 +218,25 @@ export const deleteBatchRule = async (req, res) => {
   }
 };
 
+export const getStaff = async (req, res) => {
+  try {
+    const staff = await User.find({ role: { $in: ["warden", "caretaker"] } }).populate("hostelId", "name");
+    res.json(staff);
+  } catch (err) {
+    res.status(500).json({ error: "Failed to fetch staff" });
+  }
+};
+
+export const deleteStaff = async (req, res) => {
+  try {
+    const { id } = req.params;
+    await User.findByIdAndDelete(id);
+    res.json({ msg: "Staff deleted successfully" });
+  } catch (err) {
+    res.status(500).json({ error: "Failed to delete staff" });
+  }
+};
+
 export const getDashboardStats = async (req, res) => {
   try {
 
@@ -235,9 +254,10 @@ export const getDashboardStats = async (req, res) => {
 
     const totalHostels = hostels.length;
 
+    // Count students actually allocated
     const occupiedBeds = await User.countDocuments({
-      hostelId: { $ne: null },
-      role: "student"
+      role: "student",
+      hostelId: { $ne: null }
     });
 
     const occupancyRate =
@@ -263,28 +283,43 @@ export const getHostelOccupancy = async (req, res) => {
 
     const hostels = await Hostel.find();
 
-    const data = await Promise.all(
-      hostels.map(async (h) => {
+    // Get occupied students per hostel in ONE query
+    const occupancy = await User.aggregate([
+      {
+        $match: {
+          role: "student",
+          hostelId: { $ne: null }
+        }
+      },
+      {
+        $group: {
+          _id: "$hostelId",
+          occupied: { $sum: 1 }
+        }
+      }
+    ]);
 
-        let capacity = 0;
+    const occupancyMap = {};
+    occupancy.forEach(o => {
+      occupancyMap[o._id.toString()] = o.occupied;
+    });
 
-        h.roomConfigs.forEach(rc => {
-          capacity += rc.rooms * rc.capacity;
-        });
+    const data = hostels.map(h => {
 
-        const occupied = await User.countDocuments({
-          hostelId: h._id,
-          role: "student"
-        });
+      let capacity = 0;
 
-        return {
-          name: h.name,
-          capacity,
-          occupied
-        };
+      h.roomConfigs.forEach(rc => {
+        capacity += rc.rooms * rc.capacity;
+      });
 
-      })
-    );
+      return {
+        name: h.name,
+        type: h.type,
+        capacity,
+        occupied: occupancyMap[h._id.toString()] || 0
+      };
+
+    });
 
     res.json(data);
 

@@ -6,7 +6,9 @@ import {
   downloadStudents,
   getRoomStats,
   getHostelLeavingForms,
-  getGuestHouseForms
+  getGuestHouseForms,
+  updateHostelLeavingStatus,
+  updateGuestHouseStatus
 } from "../controllers/caretakerController.js";
 import multer from "multer";
 
@@ -24,5 +26,8 @@ router.get("/room-stats", getRoomStats);
 // New Routes for Forms
 router.get("/forms/hostel-leaving", getHostelLeavingForms);
 router.get("/forms/guesthouse", getGuestHouseForms);
+
+router.patch("/forms/hostel-leaving/:id/status", updateHostelLeavingStatus);
+router.patch("/forms/guesthouse/:id/status", updateGuestHouseStatus);
 
 export default router;

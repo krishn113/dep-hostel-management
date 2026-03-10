@@ -21,6 +21,7 @@ export default function DashboardLayout({ children, role }) {
       { label: "Students Lists", icon: "📊", path: "/dashboard/caretaker/students" },
       { label: "Complaints", icon: "🛠️", path: "/dashboard/caretaker/complaints" },
       { label: "Notices", icon: "📝", path: "/dashboard/caretaker/notices" },
+      { label: "Forms", icon: "📄", path: "/dashboard/caretaker/forms" },
     ],
     warden: [
       { label: "Overview", icon: "🏠", path: "/dashboard/warden" },
@@ -28,6 +29,12 @@ export default function DashboardLayout({ children, role }) {
       { label: "Complaints", icon: "🛠️", path: "/dashboard/warden/complaints" },
       { label: "Notices", icon: "📝", path: "/dashboard/warden/notices" },
       { label: "Forms", icon: "📄", path: "/dashboard/warden/forms" },
+    ],
+    admin: [
+      { label: "Overview", icon: "🏠", path: "/dashboard/admin" },
+      { label: "Allocations", icon: "📊", path: "/dashboard/admin/allocations" },
+      { label: "Hostels", icon: "🛠️", path: "/dashboard/admin/hostels" },
+      { label: "Staff", icon: "📝", path: "/dashboard/admin/staff" },
     ]
   };
 

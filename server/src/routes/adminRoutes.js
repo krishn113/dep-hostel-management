@@ -12,7 +12,9 @@ import {
   updateBatchRule,
   deleteBatchRule, 
   getDashboardStats,
-  getHostelOccupancy
+  getHostelOccupancy,
+  getStaff,
+  deleteStaff
 } from "../controllers/adminController.js";
 
 import { protect, allowRoles } from "../middleware/auth.js";
@@ -34,6 +36,8 @@ router.delete("/allocations/batch/:id", protect, allowRoles("admin"), deleteBatc
 router.post("/allocations/student", protect, allowRoles("admin"), allocateStudent);
 
 router.post("/staff", protect, allowRoles("admin"), createStaff);
+router.get("/staff", protect, allowRoles("admin"), getStaff);
+router.delete("/staff/:id", protect, allowRoles("admin"), deleteStaff);
 router.get(
   "/dashboard",
   protect,

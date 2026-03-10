@@ -260,3 +260,55 @@ export const getGuestHouseForms = async (req, res) => {
     res.status(500).json({ error: "Failed to fetch guesthouse forms" });
   }
 };
+
+export const updateHostelLeavingStatus = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { status } = req.body;
+
+    if (!["Approved", "Rejected"].includes(status)) {
+      return res.status(400).json({ error: "Invalid status" });
+    }
+
+    const form = await HostelLeaving.findOneAndUpdate(
+      { _id: id, hostelId: req.user.hostelId },
+      { status },
+      { new: true }
+    );
+
+    if (!form) {
+      return res.status(404).json({ error: "Form not found" });
+    }
+
+    res.json({ message: `Form ${status.toLowerCase()} successfully`, form });
+  } catch (error) {
+    console.error("Error updating hostel leaving status:", error);
+    res.status(500).json({ error: "Failed to update status" });
+  }
+};
+
+export const updateGuestHouseStatus = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { status } = req.body;
+
+    if (!["Approved", "Rejected"].includes(status)) {
+      return res.status(400).json({ error: "Invalid status" });
+    }
+
+    const form = await GuestHouseBooking.findOneAndUpdate(
+      { _id: id, hostelId: req.user.hostelId },
+      { status },
+      { new: true }
+    );
+
+    if (!form) {
+      return res.status(404).json({ error: "Form not found" });
+    }
+
+    res.json({ message: `Booking ${status.toLowerCase()} successfully`, form });
+  } catch (error) {
+    console.error("Error updating guesthouse status:", error);
+    res.status(500).json({ error: "Failed to update status" });
+  }
+};

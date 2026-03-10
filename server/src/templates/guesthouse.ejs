@@ -1,65 +1,481 @@
-<html>
+<!DOCTYPE html>
+<html lang="en">
 <head>
-<style>
-body{font-family:Arial}
-h2{text-align:center}
-table{width:100%;border-collapse:collapse}
-td{border:1px solid #ccc;padding:8px}
-</style>
-</head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Guest House Reservation Form</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
 
+    html {
+      height: 297mm;
+    }
+
+    body {
+      font-family: "Times New Roman", Times, serif;
+      font-size: 11px;
+      color: #000;
+      padding: 18px 30px 20px 30px;
+      background: #fff;
+      /* Fill exactly one A4 page and distribute leftover space */
+      min-height: 297mm;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ── Header ── */
+    .header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      margin-bottom: 6px;
+    }
+    .header-logo {
+      width: 62px;
+      height: 62px;
+      flex-shrink: 0;
+    }
+    .header-text {
+      flex: 1;
+      text-align: center;
+      padding: 0 10px;
+    }
+    .header-text .hindi  { font-size: 13px; font-weight: bold; line-height: 1.7; }
+    .header-text .address { font-size: 10.5px; line-height: 1.6; }
+    .header-text .contact { font-size: 10.5px; line-height: 1.6; }
+
+    .form-no-box {
+      border: 1px solid #000;
+      padding: 4px 8px;
+      font-size: 10px;
+      text-align: center;
+      min-width: 90px;
+    }
+    .form-no-box div:first-child {
+      font-weight: bold;
+      border-bottom: 1px solid #000;
+      margin-bottom: 18px;
+      padding-bottom: 2px;
+    }
+
+    /* ── Title ── */
+    .form-title {
+      text-align: center;
+      font-size: 13px;
+      font-weight: bold;
+      text-decoration: underline;
+      margin: 9px 0 11px;
+    }
+
+    /* ── Field rows ── */
+    .field-row {
+      display: flex;
+      align-items: flex-end;
+      margin-bottom: 9px;
+      gap: 6px;
+    }
+    .field-label { white-space: nowrap; }
+    .field-line {
+      flex: 1;
+      border-bottom: 1px solid #000;
+      min-width: 40px;
+      height: 15px;
+      padding-bottom: 1px;
+      padding-left: 3px;
+    }
+
+    /* arrival / departure table */
+    .arr-dep-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 9px;
+    }
+    .arr-dep-table th, .arr-dep-table td {
+      border: 1px solid #000;
+      padding: 5px 6px;
+      text-align: left;
+    }
+    .arr-dep-table th { font-weight: bold; text-align: center; }
+    .arr-dep-table .cell-label { font-weight: normal; width: 38px; }
+    .arr-dep-table .cell-value { min-width: 120px; }
+
+    /* room rate table */
+    .rate-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 7px 0 5px;
+      font-size: 10.5px;
+    }
+    .rate-table th {
+      border: 1px solid #000;
+      padding: 4px 6px;
+      text-align: center;
+      font-weight: bold;
+    }
+    .rate-table td {
+      border: 1px solid #000;
+      padding: 4px 6px;
+    }
+    .rate-table td:nth-child(2),
+    .rate-table td:nth-child(4) { min-width: 80px; }
+
+    /* checkbox inline */
+    .checkbox-inline {
+      display: inline-block;
+      width: 13px;
+      height: 13px;
+      border: 1px solid #000;
+      vertical-align: middle;
+      text-align: center;
+      line-height: 12px;
+      font-size: 10px;
+      margin: 0 3px;
+    }
+
+    /* italic notice */
+    .notice {
+      font-style: italic;
+      font-size: 10px;
+      margin: 4px 0;
+      line-height: 1.55;
+    }
+
+    /* Undertaking */
+    .undertaking-title {
+      text-align: center;
+      font-weight: bold;
+      text-decoration: underline;
+      margin: 9px 0 6px;
+    }
+    .undertaking-item {
+      margin-bottom: 7px;
+      line-height: 1.6;
+    }
+    .project-line {
+      display: flex;
+      align-items: flex-end;
+      gap: 4px;
+    }
+
+    /* applicant details table */
+    .applicant-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 7px 0 0;
+      font-size: 10.5px;
+    }
+    .applicant-table th, .applicant-table td {
+      border: 1px solid #000;
+      padding: 5px 5px;
+      text-align: left;
+    }
+    .applicant-table th { font-weight: bold; text-align: center; }
+
+    /* ── SPACER pushes bottom block to page end ── */
+    .v-spacer { flex: 1; }
+
+    /* date / signature row */
+    .sign-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+      margin: 12px 0 6px;
+    }
+    .sign-row .date-block {
+      display: flex;
+      align-items: flex-end;
+      gap: 6px;
+    }
+    .sign-block { text-align: right; font-style: italic; }
+
+    /* Office use table */
+    .office-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 10.5px;
+    }
+    .office-table th, .office-table td {
+      border: 1px solid #000;
+      padding: 5px 5px;
+      text-align: center;
+    }
+    .office-table th { font-weight: bold; }
+    .office-table td { height: 34px; }
+
+    .section-label {
+      font-weight: bold;
+      margin: 8px 0 4px;
+      text-decoration: underline;
+    }
+
+    hr.thin { border: none; border-top: 1px solid #000; margin: 6px 0; }
+
+    .bold   { font-weight: bold; }
+    .italic { font-style: italic; }
+    .center { text-align: center; }
+  </style>
+</head>
 <body>
 
-<h2>Guest House Booking Request</h2>
+  <!-- ══ HEADER ══ -->
+  <div class="header">
+    <img class="header-logo" src="<%= logoBase64 %>" alt="IIT Ropar Logo" />
 
-<table>
+    <div class="header-text">
+      <div class="hindi">भारतीय प्रौद्योगिकी संस्थान रोपड़ / Indian Institute of Technology Ropar</div>
+      <div class="address">रूपनगर, पंजाब – १४०००१ Rupnagar, Punjab – 140001</div>
+      <div class="contact">
+        दूरभाष/Telephone: 01881-236951, ईमेल /Email :
+        <a href="mailto:guesthouse@iitrpr.ac.in" style="color:#000;">guesthouse@iitrpr.ac.in</a>
+      </div>
+    </div>
 
-<tr>
-<td>Guest Name</td>
-<td><%= guestName %></td>
-</tr>
+    <div class="form-no-box">
+      <div>Guest House<br>Form No.</div>
+      <div>&nbsp;</div>
+    </div>
+  </div>
 
-<tr>
-<td>Gender</td>
-<td><%= gender %></td>
-</tr>
+  <hr class="thin"/>
 
-<tr>
-<td>Address</td>
-<td><%= address %></td>
-</tr>
+  <!-- ══ TITLE ══ -->
+  <div class="form-title">Guest House Reservation Form</div>
 
-<tr>
-<td>Contact</td>
-<td><%= contactNumber %></td>
-</tr>
+  <!-- 1. Name / Gender -->
+  <div class="field-row">
+    <span class="field-label">1. Name of the Guest:</span>
+    <span class="field-line"><%= guestName || '' %></span>
+    <span class="field-label" style="margin-left:10px;">Gender (Male/Female)</span>
+    <span class="field-line" style="max-width:100px;"><%= gender || '' %></span>
+  </div>
 
-<tr>
-<td>No. Guests</td>
-<td><%= numGuests %></td>
-</tr>
+  <!-- 2. Address -->
+  <div class="field-row">
+    <span class="field-label">2. Address of Guest:</span>
+    <span class="field-line"><%= address || '' %></span>
+  </div>
 
-<tr>
-<td>No. Rooms</td>
-<td><%= numRooms %></td>
-</tr>
+  <!-- 3. Contact / Guests / Rooms -->
+  <div class="field-row">
+    <span class="field-label">3. Contact number</span>
+    <span class="field-line" style="max-width:110px;"><%= contactNumber || '' %></span>
+    <span class="field-label" style="margin-left:8px;">Number of guests:</span>
+    <span class="field-line" style="max-width:50px;"><%= numGuests || '' %></span>
+    <span class="field-label" style="margin-left:8px;">4. Number of Rooms required:</span>
+    <span class="field-line" style="max-width:50px;"><%= numRooms || '' %></span>
+  </div>
 
-<tr>
-<td>Arrival</td>
-<td><%= arrivalDate %></td>
-</tr>
+  <!-- 5. Occupancy Type -->
+  <div class="field-row">
+    <span class="field-label">5. Type of Occupancy: Single Occupancy/Double Occupancy:</span>
+    <span class="field-line"><%= occupancyType || '' %></span>
+  </div>
 
-<tr>
-<td>Departure</td>
-<td><%= departureDate %></td>
-</tr>
+  <!-- Arrival / Departure table -->
+  <table class="arr-dep-table">
+    <thead>
+      <tr>
+        <th colspan="2">Arrival Information</th>
+        <th colspan="2">Departure Information</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td class="cell-label"><strong>Date:</strong></td>
+        <td class="cell-value"><%= arrivalDate ? new Date(arrivalDate).toLocaleDateString('en-IN') : '' %></td>
+        <td class="cell-label"><strong>Date:</strong></td>
+        <td class="cell-value"><%= departureDate ? new Date(departureDate).toLocaleDateString('en-IN') : '' %></td>
+      </tr>
+      <tr>
+        <td class="cell-label"><strong>Time:</strong></td>
+        <td class="cell-value"><%= arrivalTime || '' %></td>
+        <td class="cell-label"><strong>Time:</strong></td>
+        <td class="cell-value"><%= departureTime || '' %></td>
+      </tr>
+    </tbody>
+  </table>
 
-<tr>
-<td>Purpose</td>
-<td><%= purpose %></td>
-</tr>
+  <!-- 6. Purpose -->
+  <div class="field-row">
+    <span class="field-label">6. Purpose of booking:</span>
+    <span class="field-line"><%= purpose || '' %></span>
+  </div>
 
-</table>
+  <!-- 7. Room to be booked -->
+  <div class="field-row">
+    <span class="field-label">7. Room to be booked:</span>
+    <span class="field-label" style="margin-left:6px;">Executive Suite Room</span>
+    <span class="checkbox-inline">
+      <%= (roomToBeBooked && roomToBeBooked.toLowerCase().includes('executive')) ? '✓' : '' %>
+    </span>
+    <span class="field-label" style="margin-left:10px;">Business Room</span>
+    <span class="checkbox-inline">
+      <%= (roomToBeBooked && roomToBeBooked.toLowerCase().includes('business')) ? '✓' : '' %>
+    </span>
+  </div>
+
+  <!-- 8. Category -->
+  <div class="field-row">
+    <span class="field-label">8. Category under which room to be booked</span>
+    <span class="checkbox-inline">✓</span>
+    <span style="margin-left:4px;">(Please refer to the table on page no.-2)</span>
+  </div>
+
+  <!-- Rate table -->
+  <table class="rate-table">
+    <thead>
+      <tr>
+        <th colspan="2">Executive Suite Room</th>
+        <th colspan="2">Business Rooms</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>Cat-A (Free)</td>
+        <td>
+          <span class="checkbox-inline">
+            <%= (roomToBeBooked && roomToBeBooked.includes('Executive') && roomToBeBooked.includes('Cat-A')) ? '✓' : '' %>
+          </span>
+        </td>
+        <td>Cat-A (Free)</td>
+        <td>
+          <span class="checkbox-inline">
+            <%= (roomToBeBooked && roomToBeBooked.includes('Business') && roomToBeBooked.includes('Cat-A')) ? '✓' : '' %>
+          </span>
+        </td>
+      </tr>
+      <tr>
+        <td>Cat-B Rs.3500/-</td>
+        <td>
+          <span class="checkbox-inline">
+            <%= (roomToBeBooked && roomToBeBooked.includes('Cat-B') && roomToBeBooked.includes('3500')) ? '✓' : '' %>
+          </span>
+        </td>
+        <td>B-1 Rs. 2000/-</td>
+        <td>
+          <span class="checkbox-inline">
+            <%= (roomToBeBooked && roomToBeBooked.includes('B-1')) ? '✓' : '' %>
+          </span>
+        </td>
+      </tr>
+      <tr>
+        <td></td>
+        <td></td>
+        <td>B-2 Rs. 1200/-</td>
+        <td>
+          <span class="checkbox-inline">
+            <%= (roomToBeBooked && roomToBeBooked.includes('B-2')) ? '✓' : '' %>
+          </span>
+        </td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="notice"><em>GST charges will be extra as applicable.</em></div>
+  <div class="notice">
+    The detail of various categories along with rates is given back side on this form.
+    <strong>Kindly attach prior approval from the competent authority for category 'A' &amp; 'B' as given back side.</strong>
+  </div>
+
+  <!-- ══ UNDERTAKING ══ -->
+  <div class="undertaking-title">Undertaking</div>
+
+  <div class="undertaking-item">
+    (a) I hereby undertake to vacate the room in the guest house, if allotted, on the expiry of the sanctioned period. In-case I fail
+    to do so, I will be liable to be charged panel rent equivalent to 4 times of the normal rent on daily basis.
+  </div>
+  <div class="undertaking-item">
+    (b) I have read the terms &amp; conditions (on the back side of this form) and these are acceptable to me.
+  </div>
+  <div class="undertaking-item">
+    (c) Boarding/Lodging charges will be paid by the Guest or not:
+    <span style="border-bottom:1px solid #000; min-width:80px; display:inline-block; padding-left:4px;">
+      <%= typeof paymentByGuest !== 'undefined' ? (paymentByGuest ? 'Yes' : 'No') : '' %>
+    </span>
+  </div>
+  <div class="undertaking-item project-line">
+    <span>(d) Guest not to be charged</span>
+    <span style="flex:1; border-bottom:1px solid #000; margin: 0 4px;">&nbsp;</span>
+    <span>Project no / Budget Head / Other</span>
+    <span style="flex:1; border-bottom:1px solid #000; margin-left:4px;">&nbsp;</span>
+  </div>
+  <div class="undertaking-item">
+    (e) The guest will be treated as Institute guest. Approval from competent authority is attached.
+    <span style="border-bottom:1px solid #000; display:inline-block; min-width:120px;">&nbsp;</span>
+  </div>
+  <div class="undertaking-item">
+    (f) Remarks (if any):
+    <span style="border-bottom:1px solid #000; display:inline-block; min-width:300px;">&nbsp;</span>
+  </div>
+  <div class="notice bold">
+    *supporting document and approval from competent authority needs to be attached with booking form.
+  </div>
+
+  <!-- ══ APPLICANT DETAILS ══ -->
+  <div class="section-label">Details of the applicant/proposer for guest house booking:</div>
+  <table class="applicant-table">
+    <thead>
+      <tr>
+        <th>Name of<br>applicant/proposer</th>
+        <th>Designation</th>
+        <th>Department</th>
+        <th>Employee code/<br>Entry number</th>
+        <th>Mobile Number</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td style="min-width:80px; height:24px;"><%= applicantName || '' %></td>
+        <td style="min-width:70px;">Student</td>
+        <td style="min-width:80px;"><%= applicantDepartment || '' %></td>
+        <td style="min-width:70px;"><%= applicantEntryNo || '' %></td>
+        <td style="min-width:80px;"><%= applicantMobileNo || '' %></td>
+      </tr>
+    </tbody>
+  </table>
+
+  <!-- ── Flexible gap: absorbs all remaining whitespace ── -->
+  <div class="v-spacer"></div>
+
+  <!-- Date + Signature -->
+  <div class="sign-row">
+    <div class="date-block">
+      <span>Date:</span>
+      <span style="border-bottom:1px solid #000; min-width:150px; display:inline-block; padding-left:4px;">
+        <%= createdAt ? new Date(createdAt).toLocaleDateString('en-IN') : '' %>
+      </span>
+    </div>
+    <div class="sign-block">( Signature of applicant/proposer)</div>
+  </div>
+
+  <div style="margin-bottom:8px;">
+    <strong>(Signature of Approving Authority, as applicable)</strong>
+  </div>
+
+  <!-- ══ FOR OFFICE USE ONLY ══ -->
+  <div class="center bold" style="margin-bottom:4px;">For Office use only</div>
+  <table class="office-table">
+    <thead>
+      <tr>
+        <th>Room no<br>confirmed</th>
+        <th>Entered at Sr. no and<br>page no</th>
+        <th>Date of<br>entry</th>
+        <th>Date of booking with check<br>In &amp; check out time</th>
+        <th>Remarks</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>&nbsp;</td>
+        <td>&nbsp;</td>
+        <td>&nbsp;</td>
+        <td>&nbsp;</td>
+        <td>&nbsp;</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="center" style="margin-top:8px; font-size:10px;">1</div>
 
 </body>
 </html>
