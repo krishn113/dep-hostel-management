@@ -15,6 +15,7 @@ export default function DashboardLayout({ children, role }) {
       { label: "Notices", icon: "📢", path: "/dashboard/student/notices" },
       { label: "Complaints", icon: "🛠️", path: "/dashboard/student/complaints" },
       { label: "Forms", icon: "📄", path: "/dashboard/student/forms" },
+      { label: "Lost & Found", icon: "📄", path: "/dashboard/student/lost-found" },
     ],
     caretaker: [
       { label: "Overview", icon: "🏠", path: "/dashboard/caretaker" },
