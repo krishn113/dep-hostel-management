@@ -1,153 +1,119 @@
 "use client";
 import { useState, useEffect } from "react";
 import { useAuth } from "@/context/AuthContext";
+import { useRouter } from "next/navigation";
 import DashboardLayout from "@/components/DashboardLayout";
 import StatsGrid from "@/components/StatsGrid";
 import API from "@/lib/api";
 import { MessageSquare, Bell, FileText, ArrowUpRight } from "lucide-react";
+
 export default function StudentDashboard() {
   const { user } = useAuth();
+  const router = useRouter();
   const [activeTab, setActiveTab] = useState("overview");
   const [latestNotice, setLatestNotice] = useState(null);
+  const [statsData, setStatsData] = useState({ issues: 0, notices: 0 });
 
-useEffect(() => {
-  const fetchLatestNotice = async () => {
-    // Only fetch if the user profile from AuthContext is fully loaded
-    if (!user?.year || !user?.gender || !user?.degreeType) return;
+  useEffect(() => {
+    const fetchDashboardData = async () => {
+      if (!user?.year || !user?.gender || !user?.degreeType) return;
 
-    try {
-      const allocRes = await API.get("/allocations/find", {
-        params: { 
-          year: user.year, 
-          gender: user.gender, 
-          degreeType: user.degreeType 
-        }
-      });
-
-      const hostelId = allocRes.data?.hostelId?._id || allocRes.data?.hostelId;
-
-      if (hostelId) {
-        const noticeRes = await API.get("/notices", {
-          params: { hostel: hostelId }
+      try {
+        const allocRes = await API.get("/allocations/find", {
+          params: { year: user.year, gender: user.gender, degreeType: user.degreeType }
         });
 
-        if (noticeRes.data.length > 0) {
-          // Sort by createdAt descending to ensure the "Latest" is actually the newest
-          const sorted = noticeRes.data.sort((a, b) => 
-            new Date(b.createdAt) - new Date(a.createdAt)
-          );
-          setLatestNotice(sorted[0]); 
-        }
-      }
-    } catch (err) {
-      console.error("Dashboard Fetch Error:", err);
-    }
-  };
+        const hostelId = allocRes.data?.hostelId?._id || allocRes.data?.hostelId;
 
-  fetchLatestNotice();
-}, [user, activeTab]); // Adding activeTab here ensures it refreshes when you switch back to overview
+        if (hostelId) {
+          const noticeRes = await API.get("/notices", { params: { hostel: hostelId } });
+          const complaintRes = await API.get("/complaints");
+          const activeIssues = complaintRes.data.filter(c => c.status !== 'Resolved').length;
+
+          if (noticeRes.data.length > 0) {
+            const sorted = noticeRes.data.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+            setLatestNotice(sorted[0]);
+            setStatsData({ issues: activeIssues, notices: noticeRes.data.length });
+          }
+        }
+      } catch (err) {
+        console.error("Dashboard Fetch Error:", err);
+      }
+    };
+
+    fetchDashboardData();
+  }, [user, activeTab]);
 
   if (!user) return <div className="p-10 text-center text-indigo-600 font-bold animate-pulse">Loading Student Portal...</div>;
 
   return (
     <DashboardLayout role="student" activeTab={activeTab} setActiveTab={setActiveTab}>
-      
-      {/* HEADER SECTION */}
-      <div className="flex justify-between items-end mb-10">
-        <div className="animate-in fade-in slide-in-from-left-4 duration-700">
-          <h1 className="text-4xl font-black text-slate-900 tracking-tight">
-            {activeTab === 'overview' ? `Hey, ${user.name?.split(' ')[0]}! ` : activeTab.charAt(0).toUpperCase() + activeTab.slice(1)}
-          </h1>
-          <p className="text-slate-500 mt-1 font-medium italic">
-            {activeTab === 'overview' ? `You are currently in ${user.hostelName} Hostel` : `Manage your ${activeTab} requests here.`}
-          </p>
-        </div>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-24 md:pb-8">
         
-        {activeTab === "overview" && (
+        {/* HEADER SECTION - Stacked on mobile, side-by-side on md */}
+        <div className="flex flex-col md:flex-row md:justify-between md:items-end gap-4 mb-8">
+          <div className="animate-in fade-in slide-in-from-left-4 duration-700">
+            <h1 className="text-2xl md:text-3xl font-bold text-slate-900 tracking-tight">
+              Hey, {user.name?.split(' ')[0]}!
+            </h1>
+            <p className="text-slate-400 text-xs md:text-sm mt-0.5 font-medium">
+              You are currently in <span className="text-indigo-600 font-bold">{user.hostelName} Hostel</span>
+            </p>
+          </div>
+          
           <button 
-            onClick={() => setActiveTab("complaints")} 
-            className="bg-indigo-600 text-white px-6 py-3.5 rounded-[1.25rem] text-sm font-black shadow-xl shadow-indigo-200 hover:bg-indigo-700 hover:-translate-y-1 transition-all flex items-center gap-2 group"
+            onClick={() => router.push("/dashboard/student/complaints")} 
+            className="w-full md:w-auto bg-indigo-600 text-white px-6 py-4 md:py-3 rounded-2xl text-sm font-bold shadow-lg shadow-indigo-100 hover:bg-indigo-700 transition-all flex items-center justify-center gap-2"
           >
-            <MessageSquare size={18} className="group-hover:rotate-12 transition-transform" />
-            Post New Complaint
+            <MessageSquare size={18} />
+            Post Complaint
           </button>
-        )}
-      </div>
+        </div>
 
-      {/* CONTENT AREA */}
-      <div className="animate-in fade-in zoom-in-95 duration-500">
-        
-        {/* OVERVIEW TAB */}
-        {activeTab === "overview" && (
-          <div className="space-y-8">
-            <StatsGrid stats={[
-              { label: "My Room", value: user.roomNumber || "Pending", colorClass: "bg-emerald-50 text-emerald-600 border border-emerald-100" },
-              { label: "Active Issues", value: "0", colorClass: "bg-rose-50 text-rose-600 border border-rose-100" },
-              { label: "New Notices", value: "2", colorClass: "bg-amber-50 text-amber-600 border border-amber-100" },
-              { label: "Hostel", value: user.hostelName || "N/A", colorClass: "bg-indigo-50 text-indigo-600 border border-indigo-100" },
-            ]} />
+        {/* CONTENT AREA */}
+        <div className="space-y-6">
+          {/* StatsGrid - Ensure your StatsGrid component uses grid-cols-2 or similar on small screens */}
+          <StatsGrid stats={[
+            { label: "My Room", value: user.roomNumber || "Pending", colorClass: "bg-emerald-500" },
+            { label: "Active Issues", value: statsData.issues.toString(), colorClass: "bg-rose-500" },
+            { label: "New Notices", value: statsData.notices.toString(), colorClass: "bg-amber-500" },
+            { label: "Hostel", value: user.hostelName || "N/A", colorClass: "bg-indigo-500" },
+          ]} />
+          
+          {/* Cards Grid - 1 col on mobile, 2 col on md */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
             
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-               <div className="p-8 bg-white border border-slate-100 rounded-[2.5rem] shadow-sm relative overflow-hidden group">
-  <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
-    <Bell size={80} />
-  </div>
-  
-  <h3 className="font-bold text-slate-800 text-lg mb-2">
-    {latestNotice ? "Latest Notice 📢" : "No Notices Yet"}
-  </h3>
-  
-  <p className="text-slate-500 text-sm leading-relaxed">
-    {latestNotice 
-      ? latestNotice.title 
-      : `Check back later for updates regarding the ${user.hostelName} community.`}
-  </p>
-  
-  <button 
-  onClick={() => setActiveTab('notices')} // This keeps the user on the same page but switches the tab
-  className="mt-4 text-indigo-600 text-xs font-black uppercase tracking-widest flex items-center gap-1 hover:underline"
->
-  {latestNotice ? "Read More" : "View All"} <ArrowUpRight size={14} />
-</button>
-</div>
-
-               <div className="p-8 bg-indigo-600 rounded-[2.5rem] shadow-xl text-white shadow-indigo-200">
-                  <h3 className="font-bold text-lg mb-2">Technician Visit 🛠️</h3>
-                  <p className="text-indigo-100 text-sm leading-relaxed">
-                    Great news! Your electrical issue in Room {user.roomNumber} has been acknowledged.
-                  </p>
-                  <div className="mt-4 inline-block bg-white/20 backdrop-blur-md px-4 py-2 rounded-xl text-xs font-bold">
-                    Arrival: Tomorrow, 10:30 AM
-                  </div>
-               </div>
-            </div>
-          </div>
-        )}
-
-        {/* NOTICES TAB (VIEW ONLY) */}
-        {activeTab === "notices" && (
-          <div className="grid gap-4">
-            {[1, 2].map((i) => (
-              <div key={i} className="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm flex items-start gap-5">
-                <div className="bg-amber-100 p-3 rounded-2xl text-amber-600 text-xl">📢</div>
-                <div>
-                  <h4 className="font-bold text-slate-800 text-lg">Notice Title {i}</h4>
-                  <p className="text-slate-500 text-sm mt-1">Detailed description of the hostel notice for {user.hostelName} students...</p>
-                  <p className="text-[10px] text-slate-400 font-bold mt-4 uppercase tracking-widest">Posted on: Feb 17, 2026</p>
-                </div>
+            {/* Latest Notice Card */}
+            <div className="p-5 md:p-6 bg-white border border-slate-100 rounded-[2rem] md:rounded-3xl shadow-sm relative overflow-hidden group min-h-[160px] flex flex-col justify-between">
+              <div>
+                <h3 className="font-bold text-slate-800 text-base mb-2">Latest Notice 📢</h3>
+                <p className="text-slate-500 text-sm leading-relaxed line-clamp-3">
+                  {latestNotice ? latestNotice.title : "No recent updates for your hostel."}
+                </p>
               </div>
-            ))}
-          </div>
-        )}
+              <button 
+                onClick={() => router.push("/dashboard/student/notices")} 
+                className="mt-4 text-indigo-600 text-[11px] font-bold uppercase tracking-wider flex items-center gap-1 group-hover:gap-2 transition-all"
+              >
+                Read More <ArrowUpRight size={14} />
+              </button>
+            </div>
 
-        {/* COMPLAINTS & FORMS PLACEHOLDERS */}
-        {['complaints', 'forms'].includes(activeTab) && (
-          <div className="py-24 text-center bg-slate-50 border-4 border-dashed border-slate-100 rounded-[3rem]">
-            <div className="text-4xl mb-4">✨</div>
-            <h2 className="text-xl font-bold text-slate-400 italic">Designing the {activeTab} interface...</h2>
-            <p className="text-slate-300 text-sm">This module will follow the modular pastel theme.</p>
+            {/* Activity Card - Stylized */}
+            <div className="p-5 md:p-6 bg-indigo-600 rounded-[2rem] md:rounded-3xl shadow-xl text-white shadow-indigo-100 flex flex-col justify-between">
+              <div>
+                <h3 className="font-bold text-base mb-2 text-indigo-50">Technician Visit 🛠️</h3>
+                <p className="text-indigo-100/80 text-sm leading-relaxed">
+                  Your electrical issue in Room {user.roomNumber} has been acknowledged.
+                </p>
+              </div>
+              <div className="mt-6 bg-white/10 backdrop-blur-sm border border-white/10 px-4 py-2 rounded-xl text-[10px] font-bold w-fit">
+                Arrival: Tomorrow, 10:30 AM
+              </div>
+            </div>
+
           </div>
-        )}
+        </div>
       </div>
     </DashboardLayout>
   );
