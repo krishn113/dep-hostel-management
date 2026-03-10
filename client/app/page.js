@@ -1,5 +1,6 @@
 "use client";
 import Link from "next/link";
+import PWAButton from "@/components/PWAButton";
 
 export default function Landing() {
   return (
@@ -81,6 +82,10 @@ export default function Landing() {
       <footer className="py-8 text-center text-slate-500 text-sm border-t">
         © {new Date().getFullYear()} IIT Ropar Hostel Management. All rights reserved.
       </footer>
+
+  <PWAButton />
+
+
     </div>
   );
 }

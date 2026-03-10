@@ -1,7 +1,8 @@
 "use client";
 import { useState, useEffect } from "react";
 import API from "@/lib/api";
-import { Building2, Plus, Pencil, Users, Trash2 } from "lucide-react";
+import toast from "react-hot-toast";
+import { Building2, Plus, Pencil, Users, Trash2, X } from "lucide-react";
 import DashboardLayout from "@/components/DashboardLayout";
 
 export default function Allocations() {
@@ -56,23 +57,23 @@ export default function Allocations() {
   };
 
   const handleRuleSubmit = async () => {
+    if (!ruleForm.year.trim()) { toast.error("Year is required"); return; }
+    if (!ruleForm.hostelId) { toast.error("Select a hostel"); return; }
+    const toastId = toast.loading(editingId ? "Updating rule…" : "Creating rule…");
     try {
       if (editingId) {
         await API.put(`/admin/allocations/batch/${editingId}`, ruleForm);
-        alert("Rule Updated");
+        toast.success("Rule updated", { id: toastId });
       } else {
         await API.post("/admin/allocations/batch", ruleForm);
-        alert("Rule Created");
+        toast.success("Rule created", { id: toastId });
       }
-
       setEditingId(null);
       setShowEditModal(false);
       fetchData();
-
     } catch (err) {
-    console.log(err.response?.data || err.message);
-    alert("Update Failed");
-  }
+      toast.error(err.response?.data?.error || "Update failed", { id: toastId });
+    }
   };
 
   const startEdit = (rule) => {
@@ -89,24 +90,42 @@ export default function Allocations() {
   };
 
   const handleDeleteRule = async (id) => {
-    if (!confirm("Are you sure you want to delete this rule?")) return;
-
-    try {
-      await API.delete(`/admin/allocations/batch/${id}`);
-      alert("Rule Deleted");
-      fetchData();
-    } catch (err) {
-      console.log(err.response?.data || err.message);
-      alert("Delete Failed");
-    }
+    toast(
+      (t) => (
+        <span className="flex items-center gap-3">
+          Delete this rule?
+          <button
+            onClick={async () => {
+              toast.dismiss(t.id);
+              const tid = toast.loading("Deleting…");
+              try {
+                await API.delete(`/admin/allocations/batch/${id}`);
+                toast.success("Rule deleted", { id: tid });
+                fetchData();
+              } catch {
+                toast.error("Delete failed", { id: tid });
+              }
+            }}
+            className="bg-red-500 text-white px-3 py-1 rounded-lg text-xs font-bold"
+          >Yes</button>
+          <button onClick={() => toast.dismiss(t.id)} className="bg-slate-100 px-3 py-1 rounded-lg text-xs font-bold">No</button>
+        </span>
+      ),
+      { duration: 5000 }
+    );
   };
 
   const handleStudentAllocate = async () => {
+    if (!studentForm.email.trim()) { toast.error("Email is required"); return; }
+    if (!studentForm.hostelId) { toast.error("Select a hostel"); return; }
+    if (!studentForm.roomNumber.trim()) { toast.error("Room number is required"); return; }
+    const tid = toast.loading("Allocating student…");
     try {
       await API.post("/admin/allocations/student", studentForm);
-      alert("Student Allocated");
-    } catch {
-      alert("Failed");
+      toast.success("Student allocated!", { id: tid });
+      setStudentForm({ email: "", hostelId: hostels[0]?._id || "", roomNumber: "" });
+    } catch (err) {
+      toast.error(err.response?.data?.error || "Allocation failed", { id: tid });
     }
   };
 

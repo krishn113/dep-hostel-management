@@ -55,6 +55,23 @@ useEffect(() => {
   loadUser();
 }, []);
 
+useEffect(() => {
+  const syncLogout = (event) => {
+    if (event.key === "logout" || event.key === "token") {
+      if (!localStorage.getItem("token")) {
+        setUser(null);
+        window.location.href = "/";
+      }
+    }
+  };
+
+  window.addEventListener("storage", syncLogout);
+
+  return () => {
+    window.removeEventListener("storage", syncLogout);
+  };
+}, []);
+
   const verifyOtp = async (email, otp) => {
     try {
       const res = await API.post("/auth/verify-otp", { email, otp });
@@ -70,6 +87,10 @@ useEffect(() => {
 
   const logout = () => {
     localStorage.removeItem("token");
+
+    // trigger logout event across tabs
+    localStorage.setItem("logout", Date.now());
+
     setUser(null);
     window.location.href = "/";
   };
