@@ -1,6 +1,7 @@
 "use client";
 import Link from "next/link";
 import { useState, useEffect } from "react";
+import PWAButton from "@/components/PWAButton";
 
 const LINES = [
   "Welcome to HostelM",
@@ -157,6 +158,7 @@ export default function Landing() {
         <footer className="py-8 text-center text-slate-200 font-bold tracking-wide text-sm border-t border-white/20">
           © {new Date().getFullYear()} IIT Ropar Hostel Management. All rights reserved.
         </footer>
+          <PWAButton />
       </div>
     </div>
   );
