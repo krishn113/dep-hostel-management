@@ -8,6 +8,7 @@ import caretakerRoutes from "./routes/caretakerRoutes.js";
 import allocationRoutes from "./routes/allocationRoutes.js";
 import studentRoutes from "./routes/studentRoutes.js";
 import wardenRoutes from "./routes/wardenRoutes.js";
+import technicianVisitRoutes from "./routes/techVisit.js";
 import path from "path";
 import { fileURLToPath } from "url";
 
@@ -43,7 +44,7 @@ const pdfDir = path.join(__dirname, "pdf");
 if (!fs.existsSync(pdfDir)) {
   fs.mkdirSync(pdfDir, { recursive: true });
 }
-
+app.use("/api/technician-visit", technicianVisitRoutes);app.use("/api/complaints", complaintRoutes);
 app.use("/api/complaints", complaintRoutes);
 app.use("/api/notices", noticeRoutes);
 app.use("/api/auth", authRoutes);
