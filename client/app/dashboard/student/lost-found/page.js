@@ -342,7 +342,7 @@ export default function LostFoundPage() {
                     </p>
                     <div className="flex flex-wrap gap-3 pt-1">
                       <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest px-3 py-1 bg-white rounded-full border border-slate-100">
-                        {p.visibility === "global" ? "🌐 Global" : "🏠 Hostel only"}
+                        {p.visibility === "global" ? "Global" : "Hostel only"}
                       </span>
                       <span className="text-[10px] text-slate-400 font-medium px-3 py-1 bg-white rounded-full border border-slate-100">
                         {new Date(p.createdAt).toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" })}
