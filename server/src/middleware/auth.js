@@ -10,7 +10,11 @@ export const protect = async (req, res, next) => {
     const token = header.split(" ")[1];
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
-    const user = await User.findById(decoded.id).select("+year +gender +degreeType +hostelId");
+    // UPDATE: Added 'role' and 'name' to the select string.
+    // Ensure these match the fields your Student Dashboard uses to avoid 'undefined' errors.
+    const user = await User.findById(decoded.id)
+      .select("+role +name +year +gender +degreeType +hostelId +hostelName");
+
     if (!user) return res.status(401).json({ msg: "User not found" });
 
     // Session invalidation check
@@ -20,15 +24,17 @@ export const protect = async (req, res, next) => {
     req.user = user;
     next();
   } catch (err) {
+    // Better logging for debugging "State Gap" issues
+    console.error("Auth Middleware Error:", err.message);
     res.status(401).json({ msg: "Invalid or expired token" });
   }
 };
 
 export const allowRoles = (...roles) => {
-  return (req,res,next) => {
-    if (!roles.includes(req.user.role))
+  return (req, res, next) => {
+    // This check only works if 'role' was selected in the protect middleware above
+    if (!req.user || !roles.includes(req.user.role))
       return res.status(403).json({ msg: "Access denied" });
     next();
   };
 };
-

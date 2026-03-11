@@ -13,35 +13,51 @@ export default function Login() {
   const { setUser } = useAuth();
   const router = useRouter();
 
-  const handle = async () => {
-    if (!email.endsWith("@iitrpr.ac.in")) {
-      toast.error("Please use your IIT Ropar email");
-      return;
-    }
+const handle = async () => {
+  if (!email.endsWith("@iitrpr.ac.in")) {
+    toast.error("Please use your IIT Ropar email");
+    return;
+  }
 
+  try {
+    setLoading(true);
+
+    // 1. Initial Login to get the token
+    const res = await API.post("/auth/login", { email, password });
+    
+    // 2. Save token immediately so the interceptor can use it for the next call
+    localStorage.setItem("token", res.data.token);
+
+    // 3. Fetch the full profile (year, gender, hostelName, etc.)
     try {
-      setLoading(true);
+      const profileRes = await API.get("/auth/me");
+      
+      // 4. Set the FULL user data into context
+      setUser(profileRes.data);
 
-      const res = await API.post("/auth/login", { email, password });
+      // 5. Navigate using the role from the complete profile
+      const role = profileRes.data.role;
+      if (role === "admin") router.push("/dashboard/admin");
+      else if (role === "warden") router.push("/dashboard/warden");
+      else if (role === "caretaker") router.push("/dashboard/caretaker");
+      else router.push("/dashboard/student");
 
-      localStorage.setItem("token", res.data.token);
-
+    } catch (profileErr) {
+      console.error("Profile hydration failed:", profileErr);
+      // Fallback: If profile fetch fails, set basic data so the app doesn't crash
       setUser({
         email: res.data.email,
         role: res.data.role,
       });
-
-      if (res.data.role === "admin") router.push("/dashboard/admin");
-      else if (res.data.role === "warden") router.push("/dashboard/warden");
-      else if (res.data.role === "caretaker") router.push("/dashboard/caretaker");
-      else router.push("/dashboard/student");
-
-    } catch (err) {
-      toast.error(err.response?.data?.msg || "Login failed");
-    } finally {
-      setLoading(false);
+      router.push("/dashboard/student");
     }
-  };
+
+  } catch (err) {
+    toast.error(err.response?.data?.msg || "Login failed");
+  } finally {
+    setLoading(false);
+  }
+};
 
   return (
     <div
