@@ -189,7 +189,7 @@ export default function StaffManagement() {
                   className="w-full flex items-center justify-center gap-2 bg-indigo-600 text-white py-4 rounded-2xl font-black text-[10px] uppercase tracking-widest shadow-xl shadow-indigo-100 hover:bg-indigo-700 hover:-translate-y-1 transition-all disabled:opacity-50"
                 >
                   <Plus size={16} />
-                  {loading ? "Syncing..." : "Provision Account"}
+                  {loading ? "Syncing..." : "Create and Send Credentials"}
                 </button>
               </div>
             </div>

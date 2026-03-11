@@ -31,31 +31,31 @@ export default function DashboardLayout({ children, role }) {
 
   const menus = {
     student: [
-      { label: "Overview",    iconKey: "home",       path: "/dashboard/student" },
-      { label: "Notices",     iconKey: "notices",    path: "/dashboard/student/notices" },
-      { label: "Complaints",  iconKey: "complaints", path: "/dashboard/student/complaints" },
-      { label: "Forms",       iconKey: "forms",      path: "/dashboard/student/forms" },
-      { label: "Lost & Found",iconKey: "lostfound",  path: "/dashboard/student/lost-found" },
+      { label: "Overview", iconKey: "home", path: "/dashboard/student" },
+      { label: "Notices", iconKey: "notices", path: "/dashboard/student/notices" },
+      { label: "Complaints", iconKey: "complaints", path: "/dashboard/student/complaints" },
+      { label: "Forms", iconKey: "forms", path: "/dashboard/student/forms" },
+      { label: "Lost & Found", iconKey: "lostfound", path: "/dashboard/student/lost-found" },
     ],
     caretaker: [
-      { label: "Overview",       iconKey: "home",       path: "/dashboard/caretaker" },
-      { label: "Students Lists", iconKey: "students",   path: "/dashboard/caretaker/students" },
-      { label: "Complaints",     iconKey: "complaints", path: "/dashboard/caretaker/complaints" },
-      { label: "Notices",        iconKey: "notices",    path: "/dashboard/caretaker/notices" },
-      { label: "Forms",          iconKey: "forms",      path: "/dashboard/caretaker/forms" },
+      { label: "Overview", iconKey: "home", path: "/dashboard/caretaker" },
+      { label: "Students Lists", iconKey: "students", path: "/dashboard/caretaker/students" },
+      { label: "Complaints", iconKey: "complaints", path: "/dashboard/caretaker/complaints" },
+      { label: "Notices", iconKey: "notices", path: "/dashboard/caretaker/notices" },
+      { label: "Forms", iconKey: "forms", path: "/dashboard/caretaker/forms" },
     ],
     warden: [
-      { label: "Overview",       iconKey: "home",       path: "/dashboard/warden" },
-      { label: "Students Lists", iconKey: "students",   path: "/dashboard/warden/students" },
-      { label: "Complaints",     iconKey: "complaints", path: "/dashboard/warden/complaints" },
-      { label: "Notices",        iconKey: "notices",    path: "/dashboard/warden/notices" },
-      { label: "Forms",          iconKey: "forms",      path: "/dashboard/warden/forms" },
+      { label: "Overview", iconKey: "home", path: "/dashboard/warden" },
+      { label: "Students Lists", iconKey: "students", path: "/dashboard/warden/students" },
+      { label: "Complaints", iconKey: "complaints", path: "/dashboard/warden/complaints" },
+      { label: "Notices", iconKey: "notices", path: "/dashboard/warden/notices" },
+      { label: "Forms", iconKey: "forms", path: "/dashboard/warden/forms" },
     ],
     admin: [
-      { label: "Overview",    iconKey: "home",        path: "/dashboard/admin" },
+      { label: "Overview", iconKey: "home", path: "/dashboard/admin" },
       { label: "Allocations", iconKey: "allocations", path: "/dashboard/admin/allocations" },
-      { label: "Hostels",     iconKey: "hostel",      path: "/dashboard/admin/hostels" },
-      { label: "Staff",       iconKey: "staff",       path: "/dashboard/admin/staff" },
+      { label: "Hostels", iconKey: "hostel", path: "/dashboard/admin/hostels" },
+      { label: "Staff", iconKey: "staff", path: "/dashboard/admin/staff" },
     ],
   };
 
@@ -92,11 +92,10 @@ export default function DashboardLayout({ children, role }) {
             <button
               key={item.label}
               onClick={() => handleNav(item.path)}
-              className={`w-full flex items-center gap-3 px-4 py-3 rounded-2xl font-bold transition-all text-sm ${
-                active
+              className={`w-full flex items-center gap-3 px-4 py-3 rounded-2xl font-bold transition-all text-sm ${active
                   ? "bg-indigo-50 text-indigo-600"
                   : "text-slate-500 hover:bg-slate-50 hover:text-slate-700"
-              }`}
+                }`}
             >
               <Icon size={18} className={active ? "text-indigo-500" : "text-slate-400"} />
               {item.label}
@@ -136,9 +135,8 @@ export default function DashboardLayout({ children, role }) {
 
       {/* ── MOBILE DRAWER ── */}
       <aside
-        className={`fixed top-0 left-0 h-full w-72 bg-white border-r border-slate-200 flex flex-col z-40 transform transition-transform duration-300 md:hidden ${
-          sidebarOpen ? "translate-x-0" : "-translate-x-full"
-        }`}
+        className={`fixed top-0 left-0 h-full w-72 bg-white border-r border-slate-200 flex flex-col z-40 transform transition-transform duration-300 md:hidden ${sidebarOpen ? "translate-x-0" : "-translate-x-full"
+          }`}
       >
         <SidebarContent />
       </aside>
@@ -170,23 +168,35 @@ export default function DashboardLayout({ children, role }) {
             )}
           </div>
 
-          {/* Right: profile pill */}
-          <div
-            onClick={() => setIsProfileModalOpen(true)}
-            className="flex items-center gap-3 bg-slate-100 px-3 py-2 rounded-2xl border border-slate-200 cursor-pointer hover:bg-slate-200 transition shrink-0"
-          >
-            <div className="text-right hidden sm:block">
-              <p className="text-[10px] font-black text-slate-400 uppercase tracking-tighter">
-                {user?.role === "caretaker" || user?.role === "warden"
-                  ? `${role} ${user?.hostelName || ""}`.trim()
-                  : role}
-              </p>
-              <p className="text-sm font-bold text-slate-800">{user?.name}</p>
+          {/* Right: profile pill OR admin label */}
+          {role === "admin" ? (
+            <div className="flex items-center gap-2 bg-indigo-50 px-4 py-2 rounded-2xl border border-indigo-100 shrink-0">
+              <div className="w-9 h-9 bg-indigo-600 rounded-xl flex items-center justify-center text-white font-bold shadow-lg shadow-indigo-100 text-sm">
+                A
+              </div>
+              <div className="hidden sm:block">
+                <p className="text-[10px] font-black text-indigo-400 uppercase tracking-tighter">Role</p>
+                <p className="text-sm font-bold text-indigo-700">Admin</p>
+              </div>
             </div>
-            <div className="w-9 h-9 md:w-10 md:h-10 bg-indigo-600 rounded-xl flex items-center justify-center text-white font-bold shadow-lg shadow-indigo-100 text-sm">
-              {user?.name?.[0]}
+          ) : (
+            <div
+              onClick={() => setIsProfileModalOpen(true)}
+              className="flex items-center gap-3 bg-slate-100 px-3 py-2 rounded-2xl border border-slate-200 cursor-pointer hover:bg-slate-200 transition shrink-0"
+            >
+              <div className="text-right hidden sm:block">
+                <p className="text-[10px] font-black text-slate-400 uppercase tracking-tighter">
+                  {user?.role === "caretaker" || user?.role === "warden"
+                    ? `${role} ${user?.hostelName || ""}`.trim()
+                    : role}
+                </p>
+                <p className="text-sm font-bold text-slate-800">{user?.name}</p>
+              </div>
+              <div className="w-9 h-9 md:w-10 md:h-10 bg-indigo-600 rounded-xl flex items-center justify-center text-white font-bold shadow-lg shadow-indigo-100 text-sm">
+                {user?.name?.[0]}
+              </div>
             </div>
-          </div>
+          )}
         </header>
 
         {/* PAGE CONTENT */}
