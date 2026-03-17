@@ -8,9 +8,11 @@ import axios from "axios";
 import API from "@/lib/api";
 import Link from "next/link";
 import NoticeForm from "@/components/NoticeForm";
-import { 
-  BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, 
-  PieChart, Pie, Cell, Legend 
+import { WrenchScrewdriverIcon } from "@heroicons/react/24/outline";
+import { FileText } from "lucide-react";
+import {
+  BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer,
+  PieChart, Pie, Cell, Legend
 } from 'recharts';
 
 export default function CaretakerDashboard() {
@@ -21,11 +23,11 @@ export default function CaretakerDashboard() {
   const [techDate, setTechDate] = useState("");
   const fileInputRef = useRef(null);
   const [isNoticeModalOpen, setIsNoticeModalOpen] = useState(false);
-  const [stats, setStats] = useState({ 
-    newComplaints: 0, 
-    resolvedComplaints: 0, 
-    activeNotices: 0, 
-    totalStudents: 0 
+  const [stats, setStats] = useState({
+    newComplaints: 0,
+    resolvedComplaints: 0,
+    activeNotices: 0,
+    totalStudents: 0
   });
   const [caretakerInfo, setCaretakerInfo] = useState(null);
 
@@ -85,17 +87,17 @@ export default function CaretakerDashboard() {
     { key: "studentName", label: "Student" },
     { key: "issue", label: "Issue", render: (_, row) => row.category + " - " + row.description },
     { key: "roomNumber", label: "Room", render: (_, row) => row.student?.roomNumber || 'N/A' },
-    { 
-      key: "status", 
-      label: "Status", 
-      render: (val) => <StatusBadge status={val} /> 
+    {
+      key: "status",
+      label: "Status",
+      render: (val) => <StatusBadge status={val} />
     },
     {
       key: "actions",
       label: "Action",
       render: (_, row) => (
         row.status === "Pending" && (
-          <Link 
+          <Link
             href="/dashboard/caretaker/complaints"
             className="text-indigo-600 hover:text-indigo-900 font-medium"
           >
@@ -107,37 +109,37 @@ export default function CaretakerDashboard() {
   ];
 
 
- return (
+  return (
     <DashboardLayout role="caretaker">
       <div className="flex justify-between items-center mb-8">
         <div>
-           <h1 className={`text-2xl font-bold ${isCaretaker ? "text-slate-700" : "text-slate-800"}`}>Caretaker Dashboard</h1>
+          <h1 className={`text-2xl font-bold ${isCaretaker ? "text-slate-700" : "text-slate-800"}`}>Caretaker Dashboard</h1>
         </div>
-                <div className="flex gap-3">
+        <div className="flex gap-3">
 
-          <button 
-          onClick={() => setIsTechModalOpen(true)}
-          className="bg-emerald-600 text-white px-6 py-3.5 rounded-[1.25rem] text-sm font-bold shadow-xl shadow-emerald-200 hover:bg-emerald-700 hover:-translate-y-1 transition-all flex items-center gap-2"
-        >
-          {/* The Icon */}
-          <WrenchScrewdriverIcon className="w-5 h-5" />
-          
-          {/* The Text */}
-          <span>Mark Technician Visit</span>
-        </button>
+          <button
+            onClick={() => setIsTechModalOpen(true)}
+            className="bg-emerald-600 text-white px-6 py-3.5 rounded-[1.25rem] text-sm font-bold shadow-xl shadow-emerald-200 hover:bg-emerald-700 hover:-translate-y-1 transition-all flex items-center gap-2"
+          >
+            {/* The Icon */}
+            <WrenchScrewdriverIcon className="w-5 h-5" />
+
+            {/* The Text */}
+            <span>Mark Technician Visit</span>
+          </button>
           {/* Now triggers state instead of a link */}
-          <button 
-          onClick={() => setIsNoticeModalOpen(true)} 
-          className="bg-indigo-600 text-white px-6 py-3.5 rounded-[1.25rem] text-sm font-black shadow-xl shadow-indigo-200 hover:bg-indigo-700 hover:-translate-y-1 transition-all flex items-center gap-2 group"
-        >
-          <DocumentTextIcon className="w-5 h-5 text-indigo-100" />
-          Post New Notice
-        </button>
+          <button
+            onClick={() => setIsNoticeModalOpen(true)}
+            className="bg-indigo-600 text-white px-6 py-3.5 rounded-[1.25rem] text-sm font-black shadow-xl shadow-indigo-200 hover:bg-indigo-700 hover:-translate-y-1 transition-all flex items-center gap-2 group"
+          >
+            <FileText className="w-5 h-5 text-indigo-100" />
+            Post New Notice
+          </button>
         </div>
         <div className="flex gap-3">
           {/* Now triggers state instead of a link */}
-          <button 
-            onClick={() => setIsNoticeModalOpen(true)} 
+          <button
+            onClick={() => setIsNoticeModalOpen(true)}
             className="bg-indigo-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-indigo-700 transition-colors shadow-sm"
           >
             Post New Notice
@@ -149,11 +151,11 @@ export default function CaretakerDashboard() {
         { label: "Active Complaints", value: (stats.newComplaints || 0).toString(), colorClass: "bg-orange-50/50 text-orange-700 border border-orange-200 hover:bg-orange-100/70 transition cursor-pointer", onClick: () => window.location.href = "/dashboard/caretaker/complaints" },
         { label: "Resolved", value: (stats.resolvedComplaints || 0).toString(), colorClass: "bg-emerald-50/50 text-emerald-700 border border-emerald-200" },
         // WRAP THE NOTICE STAT IN A CLICKABLE LINK
-        { 
-          label: "Active Notices", 
-          value: (stats.activeNotices || 0).toString(), 
+        {
+          label: "Active Notices",
+          value: (stats.activeNotices || 0).toString(),
           colorClass: "bg-blue-50/50 text-blue-700 border border-blue-200 cursor-pointer hover:bg-blue-100/70 transition",
-          onClick: () => window.location.href = "/dashboard/caretaker/notices" 
+          onClick: () => window.location.href = "/dashboard/caretaker/notices"
         },
         { label: "Total Students", value: (stats.totalStudents || 0).toString(), colorClass: "bg-indigo-50/50 text-indigo-700 border border-indigo-200 cursor-pointer hover:bg-indigo-100/70 transition", onClick: () => window.location.href = "/dashboard/caretaker/students" },
       ]} />
@@ -184,10 +186,10 @@ export default function CaretakerDashboard() {
                     <Cell key={`cell-${index}`} fill={entry.color} />
                   ))}
                 </Pie>
-                <Tooltip 
+                <Tooltip
                   contentStyle={{ borderRadius: '1.5rem', border: 'none', boxShadow: '0 20px 25px -5px rgb(0 0 0 / 0.1)', fontWeight: 'bold' }}
                 />
-                <Legend verticalAlign="bottom" height={36} iconType="circle" wrapperStyle={{ fontWeight: 'bold', fontSize: '12px', color: '#7e22ce' }}/>
+                <Legend verticalAlign="bottom" height={36} iconType="circle" wrapperStyle={{ fontWeight: 'bold', fontSize: '12px', color: '#7e22ce' }} />
               </PieChart>
             </ResponsiveContainer>
           </div>
@@ -208,20 +210,20 @@ export default function CaretakerDashboard() {
           <div className="h-[250px] w-full relative z-10">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={resourceData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
-                <XAxis 
-                  dataKey="name" 
-                  axisLine={false} 
-                  tickLine={false} 
+                <XAxis
+                  dataKey="name"
+                  axisLine={false}
+                  tickLine={false}
                   tick={{ fill: '#7e22ce', fontSize: 11, fontWeight: 900 }}
                 />
                 <YAxis hide />
-                <Tooltip 
+                <Tooltip
                   cursor={{ fill: 'rgba(255,255,255,0.4)', radius: 15 }}
                   contentStyle={{ borderRadius: '1.5rem', border: 'none', boxShadow: '0 20px 25px -5px rgb(0 0 0 / 0.1)', fontWeight: 'bold' }}
                 />
-                <Bar 
-                  dataKey="value" 
-                  radius={[20, 20, 20, 20]} 
+                <Bar
+                  dataKey="value"
+                  radius={[20, 20, 20, 20]}
                   barSize={45}
                 >
                   {resourceData.map((entry, index) => (
@@ -270,7 +272,7 @@ export default function CaretakerDashboard() {
                   'Other': 'bg-slate-50/40 hover:bg-slate-100/60'
                 };
                 const rowBg = categoryColors[row.category] || 'bg-white hover:bg-slate-50/80';
-                
+
                 return (
                   <tr key={row._id} className={`transition-colors ${rowBg}`}>
                     <td className="px-6 py-4 text-sm font-bold text-slate-700">{row.studentName}</td>
@@ -282,7 +284,7 @@ export default function CaretakerDashboard() {
                     <td className="px-6 py-4"><StatusBadge status={row.status} /></td>
                     <td className="px-6 py-4">
                       {row.status === "Pending" && (
-                        <Link 
+                        <Link
                           href="/dashboard/caretaker/complaints"
                           className="text-indigo-600 hover:text-indigo-900 font-black text-[10px] uppercase tracking-widest"
                         >
@@ -304,12 +306,12 @@ export default function CaretakerDashboard() {
           </table>
         </div>
       </div>
-      
+
       {/* Global Notice Form */}
-      <NoticeForm 
-        isOpen={isNoticeModalOpen} 
-        onClose={() => setIsNoticeModalOpen(false)} 
-        onSuccess={fetchDashboardData} 
+      <NoticeForm
+        isOpen={isNoticeModalOpen}
+        onClose={() => setIsNoticeModalOpen(false)}
+        onSuccess={fetchDashboardData}
       />
     </DashboardLayout>
   );
