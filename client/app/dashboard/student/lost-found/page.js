@@ -12,6 +12,7 @@ export default function LostFoundPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [expandedId, setExpandedId] = useState(null);
   const [profilePhone, setProfilePhone] = useState("");
+  const [currentUserId, setCurrentUserId] = useState(null);
   const [form, setForm] = useState({
     title: "",
     description: "",
@@ -30,6 +31,7 @@ export default function LostFoundPage() {
       const res = await API.get("/auth/me");
       const phone = res.data.phone || "";
       setProfilePhone(phone);
+      setCurrentUserId(res.data._id);
       setForm((prev) => ({ ...prev, contactNumber: phone }));
     } catch (err) {
       console.log(err);
@@ -80,7 +82,11 @@ export default function LostFoundPage() {
   };
 
   const filteredPosts = posts
-    .filter((p) => p.type === activeTab && p.status !== "resolved")
+    .filter((p) => p.status !== "resolved")
+    .filter((p) => {
+      if (activeTab === "mine") return p.postedBy?._id === currentUserId;
+      return p.type === activeTab;
+    })
     .filter((p) =>
       searchQuery
         ? p.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -90,6 +96,7 @@ export default function LostFoundPage() {
 
   const lostCount = posts.filter((p) => p.type === "lost" && p.status !== "resolved").length;
   const foundCount = posts.filter((p) => p.type === "found" && p.status !== "resolved").length;
+  const myPostsCount = posts.filter((p) => p.postedBy?._id === currentUserId && p.status !== "resolved").length;
 
   return (
     <DashboardLayout role="student" activeTab="lost-found">
@@ -251,18 +258,41 @@ export default function LostFoundPage() {
                 {foundCount}
               </span>
             </button>
+            <button
+              onClick={() => setActiveTab("mine")}
+              className={`flex items-center gap-2 px-6 py-3 rounded-xl font-black text-xs uppercase tracking-widest transition-all ${
+                activeTab === "mine"
+                  ? "bg-indigo-600 text-white shadow-sm"
+                  : "text-slate-400 hover:text-slate-600"
+              }`}
+            >
+              <Package size={14} />
+              My Posts
+              <span
+                className={`ml-1 px-2 py-0.5 rounded-full text-[10px] ${
+                  activeTab === "mine"
+                    ? "bg-white/20 text-white"
+                    : "bg-slate-200 text-slate-500"
+                }`}
+              >
+                {myPostsCount}
+              </span>
+            </button>
           </div>
 
-          {/* Search */}
-          <div className="relative">
-            <Search size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
-            <input
-              type="text"
-              placeholder="Search items..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="bg-slate-100 border-none rounded-2xl py-3 pl-10 pr-5 text-sm focus:ring-2 focus:ring-indigo-500 outline-none w-64"
-            />
+          {/* Right: My Posts filter + Search */}
+          <div className="flex items-center gap-3">
+            {/* Search */}
+            <div className="relative">
+              <Search size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
+              <input
+                type="text"
+                placeholder="Search items..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="bg-slate-100 border-none rounded-2xl py-3 pl-10 pr-5 text-sm focus:ring-2 focus:ring-indigo-500 outline-none w-52"
+              />
+            </div>
           </div>
         </div>
 
@@ -271,8 +301,8 @@ export default function LostFoundPage() {
           {filteredPosts.length === 0 ? (
             <div className="text-center py-24 bg-slate-50 rounded-[3rem] border-2 border-dashed border-slate-200">
               <Package size={48} className="mx-auto text-slate-300 mb-4" />
-              <p className="text-slate-400 font-bold text-lg">No {activeTab} items posted yet</p>
-              <p className="text-slate-300 text-sm mt-1">Be the first to post something</p>
+              <p className="text-slate-400 font-bold text-lg">No {activeTab === "mine" ? "personal" : activeTab} items posted yet</p>
+              <p className="text-slate-300 text-sm mt-1">{activeTab === "mine" ? "You haven't posted any items" : "Be the first to post something"}</p>
             </div>
           ) : (
             filteredPosts.map((p) => (
@@ -326,12 +356,14 @@ export default function LostFoundPage() {
                     >
                       {expandedId === p._id ? "Hide" : "Details"}
                     </button>
-                    <button
-                      onClick={() => markResolved(p._id)}
-                      className="bg-slate-50 hover:bg-emerald-500 text-slate-400 hover:text-white border border-slate-100 hover:border-emerald-500 px-6 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all duration-300 hover:shadow-lg hover:shadow-emerald-100"
-                    >
-                      Resolve
-                    </button>
+                    {p.postedBy?._id === currentUserId && (
+                      <button
+                        onClick={() => markResolved(p._id)}
+                        className="bg-slate-50 hover:bg-emerald-500 text-slate-400 hover:text-white border border-slate-100 hover:border-emerald-500 px-6 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all duration-300 hover:shadow-lg hover:shadow-emerald-100"
+                      >
+                        Resolve
+                      </button>
+                    )}
                   </div>
                 </div>
 

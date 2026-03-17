@@ -130,10 +130,18 @@ export const getPosts = async (req, res) => {
 export const markResolved = async (req, res) => {
   try {
 
-    await LostFound.findByIdAndUpdate(
-      req.params.id,
-      { status: "resolved" }
-    );
+    const post = await LostFound.findById(req.params.id);
+
+    if (!post) {
+      return res.status(404).json({ error: "Post not found" });
+    }
+
+    // Only the original poster can resolve it
+    if (post.postedBy.toString() !== req.user._id.toString()) {
+      return res.status(403).json({ error: "Only the person who posted this can mark it resolved" });
+    }
+
+    await LostFound.findByIdAndUpdate(req.params.id, { status: "resolved" });
 
     res.json({ message: "Item marked resolved" });
 
