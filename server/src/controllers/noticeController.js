@@ -41,9 +41,24 @@ export const createNotice = async (req, res) => {
 
 export const getNotices = async (req, res) => {
   try {
-    const { hostel } = req.query; // This will be the ObjectId string
+    const { hostel } = req.query;
     
-    const query = hostel ? { hostel: hostel } : {};
+    let query = {};
+
+    if (hostel) {
+      query = { hostel: { $in: [hostel, null] } };
+    } else if (req.user) {
+      if (req.user.role === 'admin') {
+        query = {}; // Admin sees all notices
+      } else if (req.user.hostelId) {
+        query = { hostel: { $in: [req.user.hostelId, null] } };
+      } else {
+        query = { hostel: null };
+      }
+    } else {
+      query = { hostel: null };
+    }
+
     const notices = await Notice.find(query)
       .sort({ isPinned: -1, createdAt: -1 })
       .populate("author", "name");
