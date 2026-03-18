@@ -107,35 +107,77 @@ export const updateStudentSlots = async (req, res) => {
 
 // 4. CARETAKER MANAGING ACTIONS (Matches /:id/manage)
 // This handles: Proposing Date, Scheduling Time, and Resolving
-export const manageComplaint = async (req, res) => {
-  try {
-    const { action, reason } = req.body;
-    const updateData = {};
+// server/src/controllers/complaintController.js
 
-    if (action === "Resolved") {
-      updateData.status = "Resolved";
-    } else if (action === "Rejected") {
-      updateData.status = "Rejected";
-      updateData.rejectionReason = reason;
-    } else if (action === "Re-raised") {
-      // RESET: Move back to 'Raised' and clear previous scheduling data
-      updateData.status = "Raised";
-      updateData.freeSlots = []; // Clear old slots
-      updateData.scheduledTime = null;
-      updateData.proposedDate = null;
-    } else if (action === "Get Slot") {
-        updateData.status = "Get Slot";
-        updateData.proposedDate = req.body.proposedDate;
+export const manageComplaint = async (req, res) => {
+  const { id } = req.params;
+  const { action, proposedDate, scheduledTime, reason } = req.body;
+
+  try {
+    const complaint = await Complaint.findById(id);
+    if (!complaint) return res.status(404).json({ msg: "Complaint not found" });
+
+    // --- PHASE 1: Caretaker asks for slots ---
+    if (action === "Get Slot") {
+      complaint.status = "Get Slot";
+      complaint.proposedDate = proposedDate;
+      complaint.updates.push({
+        status: "Get Slot",
+        message: `Technician requested availability for ${new Date(proposedDate).toLocaleDateString()}`,
+        updatedBy: req.user._id
+      });
+    } 
+    
+    // --- PHASE 2: Caretaker picks the final hour ---
+    else if (action === "Scheduled") {
+      complaint.status = "Scheduled";
+      complaint.scheduledTime = Number(scheduledTime);
+      complaint.updates.push({
+        status: "Scheduled",
+        message: `Visit confirmed for ${scheduledTime}:00`,
+        updatedBy: req.user._id
+      });
+    } 
+
+    // --- NEW: RE-RAISED (The "Failure to Fix" Reset) ---
+    else if (action === "Re-raised") {
+      complaint.status = "Raised";
+      complaint.scheduledTime = null;
+      complaint.proposedDate = null;
+      complaint.freeSlots = []; // Clear old availability to start fresh
+      complaint.updates.push({
+        status: "Raised",
+        message: "Technician visit was incomplete. Complaint re-raised for new scheduling.",
+        updatedBy: req.user._id
+      });
     }
 
-    const updated = await Complaint.findByIdAndUpdate(
-      req.params.id, 
-      updateData, 
-      { new: true }
-    );
-    res.json(updated);
+    // --- PHASE 3: Resolve ---
+    else if (action === "Resolved") {
+      complaint.status = "Resolved";
+      complaint.resolvedAt = new Date();
+      complaint.updates.push({
+        status: "Resolved",
+        message: "Issue has been fixed and resolved.",
+        updatedBy: req.user._id
+      });
+    }
+
+    // --- OPTIONAL: Rejected (For completeness) ---
+    else if (action === "Rejected") {
+      complaint.status = "Rejected";
+      complaint.rejectionReason = reason;
+      complaint.updates.push({
+        status: "Rejected",
+        message: `Request rejected: ${reason}`,
+        updatedBy: req.user._id
+      });
+    }
+
+    await complaint.save();
+    res.json(complaint);
   } catch (err) {
-    res.status(500).json({ msg: "Update failed" });
+    res.status(500).json({ msg: "Management Error", error: err.message });
   }
 };
 
