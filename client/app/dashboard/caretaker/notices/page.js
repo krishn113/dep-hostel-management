@@ -3,21 +3,35 @@ import { useState, useEffect, useMemo } from "react";
 import DashboardLayout from "@/components/DashboardLayout";
 import API from "@/lib/api";
 import NoticeForm from "@/components/NoticeForm";
+import toast from "react-hot-toast";
+import { 
+  Bell, Search, Info, TriangleAlert, CalendarDays, 
+  Pin, RotateCcw, Filter, ChevronDown, CalendarRange, Trash2
+} from "lucide-react";
+
+const CATEGORIES = ["All", "Maintenance", "Events", "Other"];
 
 export default function NoticeDashboard() {
   const [notices, setNotices] = useState([]);
   const [noticeSearch, setNoticeSearch] = useState("");
   const [activeCategory, setActiveCategory] = useState("All");
+  const [dateFilter, setDateFilter] = useState("");
+  const [showPinnedOnly, setShowPinnedOnly] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [expandedNoticeId, setExpandedNoticeId] = useState(null);
+  const [expandedContentId, setExpandedContentId] = useState(null);
+  const [expandedAttachmentsId, setExpandedAttachmentsId] = useState(null);
 
-    // Analysis Calculations
+  // Analysis Calculations
   const stats = useMemo(() => ({
     total: notices.length,
     urgent: notices.filter(n => n.category === "Urgent").length,
     pinned: notices.filter(n => n.isPinned).length,
-    recent: notices.filter(n => (new Date() - new Date(n.createdAt)) / 36e5 < 24).length
+    recent: notices.filter(n => (new Date() - new Date(n.createdAt)) / 36e5 < 24).length,
+    weekly: notices.filter(n => {
+      const weekAgo = new Date(Date.now() - 7 * 86400000);
+      return new Date(n.createdAt) > weekAgo;
+    }).length
   }), [notices]);
 
   useEffect(() => {
@@ -26,10 +40,13 @@ export default function NoticeDashboard() {
 
   const fetchNotices = async () => {
     try {
+      setLoading(true);
       const res = await API.get("/notices");
       setNotices(res.data);
     } catch (err) {
       console.error("Failed to fetch", err);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -38,276 +55,331 @@ export default function NoticeDashboard() {
     try {
       await API.delete(`/notices/${id}`);
       setNotices(notices.filter(n => n._id !== id));
-    } catch (err) { alert("Delete failed"); }
+      toast.success("Notice deleted successfully");
+    } catch (err) { toast.error("Failed to delete notice"); }
   };
 
   const handlePinNotice = async (id, currentPin) => {
     try {
+      if (!currentPin && stats.pinned >= 3) {
+        toast.error("Maximum 3 notices can be pinned at a time");
+        return;
+      }
       await API.patch(`/notices/${id}`, { isPinned: !currentPin });
       fetchNotices();
-    } catch (err) { alert("Pinning failed"); }
+      toast.success(currentPin ? "Notice unpinned" : "Notice pinned successfully");
+    } catch (err) { toast.error("Failed to update pin status"); }
   };
 
-  const handleCreateNotice = async () => {
-  try {
-    const token = localStorage.getItem("token");
+  const filteredNotices = useMemo(() => {
+    return notices
+      .filter((n) => {
+        // Category
+        if (activeCategory !== "All" && n.category !== activeCategory) return false;
 
-    await API.post(
-      "/notices",
-      {
-        title,
-        content,
-        category
-      },
-      {
-        headers: {
-          Authorization: `Bearer ${token}`
+        // Search
+        const search = noticeSearch.toLowerCase();
+        if (
+          !n.title.toLowerCase().includes(search) &&
+          !n.content.toLowerCase().includes(search)
+        ) return false;
+
+        // Pinned
+        if (showPinnedOnly && !n.isPinned) return false;
+
+        // Date
+        if (dateFilter) {
+          const filterDate = new Date(dateFilter);
+          filterDate.setHours(0, 0, 0, 0);
+          
+          const createdDate = new Date(n.createdAt);
+          createdDate.setHours(0, 0, 0, 0);
+          
+          if (createdDate < filterDate) return false;
         }
-      }
-    );
 
-    fetchNotices();
-    setIsModalOpen(false);
+        return true;
+      })
+      .sort(
+        (a, b) =>
+          (b.isPinned - a.isPinned) ||
+          new Date(b.createdAt) - new Date(a.createdAt)
+      );
+  }, [notices, activeCategory, noticeSearch, dateFilter, showPinnedOnly]);
 
-  } catch (err) {
-    console.error(err);
-    alert("Failed to create notice");
-  }
-};
+  const getCategoryStyles = (cat) => {
+    switch (cat) {
+      case 'Urgent': return 'bg-rose-50/80 border-rose-100 text-rose-700';
+      case 'Maintenance': return 'bg-amber-50/80 border-amber-100 text-amber-700';
+      case 'Academic': return 'bg-indigo-50/80 border-indigo-100 text-indigo-700';
+      case 'Events': return 'bg-emerald-50/80 border-emerald-100 text-emerald-700';
+      default: return 'bg-slate-50 border-slate-200 text-slate-700';
+    }
+  };
 
   return (
     <DashboardLayout role="caretaker">
-      <div className="p-4 md:p-8 bg-slate-50 min-h-screen">
+      <div className="max-w-6xl mx-auto space-y-6 pb-8 px-4 animate-in fade-in duration-700">
         
-        {/* 1. BROADCAST ANALYSIS SECTION */}
-        <header className="mb-8">
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
-            <div>
-              <h1 className="text-3xl font-black text-slate-800 tracking-tight">Notice Board</h1>
-              <p className="text-slate-500 font-medium">Broadcast announcements and pin critical updates.</p>
-            </div>
+        {/* HEADER & STATS */}
+        <div className="flex flex-col xl:flex-row justify-between xl:items-center gap-6 w-full pt-4">
+          <div>
+            <h1 className="text-3xl font-black text-slate-900 tracking-tight leading-none uppercase mb-2">Notice Board</h1>
+            <p className="text-slate-500 font-medium text-sm">Broadcast announcements and pin critical updates.</p>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-3">
+            {[
+              { label: "Total", val: stats.total, color: "text-indigo-500", bg: "bg-indigo-500/10", icon: Bell },
+              { label: "Pinned", val: stats.pinned, color: "text-amber-500", bg: "bg-amber-500/10", icon: Pin },
+              { label: "This Week", val: stats.weekly, color: "text-emerald-500", bg: "bg-emerald-500/10", icon: CalendarRange },
+            ].map((s, i) => (
+              <div key={i} className="flex items-center gap-3 px-4 py-2.5 rounded-2xl border border-slate-100 shadow-sm bg-white text-slate-800 transition-all hover:shadow-md">
+                <div className={`p-2 rounded-xl flex items-center justify-center ${s.bg}`}>
+                  <s.icon size={16} className={s.color} />
+                </div>
+                <div className="flex flex-col justify-center translate-y-[1px]">
+                  <span className="text-[9px] font-black uppercase tracking-widest text-slate-400 leading-none mb-1">{s.label}</span>
+                  <span className="text-xl font-black leading-none tracking-tighter">{s.val}</span>
+                </div>
+              </div>
+            ))}
+            
             <button 
               onClick={() => setIsModalOpen(true)}
-              className="bg-indigo-600 text-white px-6 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-indigo-700 transition shadow-lg shadow-indigo-100 flex items-center gap-2"
+              className="bg-indigo-600 text-white px-5 py-3 rounded-2xl text-[11px] font-black uppercase tracking-widest hover:bg-indigo-700 transition shadow-sm flex items-center gap-2 ml-2"
             >
-              <span>➕</span> Create New Notice
+              <span>➕</span> New Notice
             </button>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            <div className="bg-indigo-50/50 p-5 rounded-[2rem] border border-indigo-100 shadow-sm transition hover:shadow-md">
-              <p className="text-[9px] font-black text-indigo-400 uppercase tracking-widest mb-1">Live Notices</p>
-              <h3 className="text-2xl font-black text-indigo-800">{stats.total}</h3>
-              <div className="h-1 w-12 bg-indigo-400 rounded-full mt-2" />
-            </div>
-            <div className="bg-rose-50/50 p-5 rounded-[2rem] border border-rose-100 shadow-sm transition hover:shadow-md">
-              <p className="text-[9px] font-black text-rose-400 uppercase tracking-widest mb-1">Urgent Alerts</p>
-              <h3 className="text-2xl font-black text-rose-600">{stats.urgent}</h3>
-              <div className="h-1 w-12 bg-rose-500 rounded-full mt-2" />
-            </div>
-            <div className="bg-amber-50/50 p-5 rounded-[2rem] border border-amber-100 shadow-sm transition hover:shadow-md">
-              <p className="text-[9px] font-black text-amber-400 uppercase tracking-widest mb-1">Pinned Items</p>
-              <h3 className="text-2xl font-black text-amber-600">{stats.pinned}</h3>
-              <div className="h-1 w-12 bg-amber-500 rounded-full mt-2" />
-            </div>
-            <div className="bg-emerald-50/50 p-5 rounded-[2rem] border border-emerald-100 shadow-sm relative overflow-hidden group">
-              <div className="relative z-10">
-                <p className="text-[9px] font-black text-emerald-400 uppercase tracking-widest mb-1">Last 24 Hours</p>
-                <h3 className="text-2xl font-black text-emerald-700">{stats.recent} New</h3>
-              </div>
-              <div className="absolute -right-2 -bottom-2 text-emerald-600 opacity-5 text-6xl group-hover:scale-125 transition duration-500">📢</div>
-            </div>
-          </div>
-        </header>
-
-        {/* 2. SEARCH & CATEGORY FILTER */}
-        <div className="max-w-6xl mx-auto mb-8">
-          <div className="bg-white p-3 rounded-[1.8rem] border border-slate-200 shadow-sm flex flex-col md:flex-row gap-2">
-            <div className="flex-1 relative">
-              <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 text-xs">🔍</span>
-              <input 
-                type="text" 
-                placeholder="Search notices..." 
-                className="w-full bg-slate-50 border-none rounded-2xl py-3 pl-11 text-sm focus:ring-2 focus:ring-indigo-500 transition"
-                onChange={(e) => setNoticeSearch(e.target.value)}
-              />
-            </div>
-            <div className="flex gap-1 overflow-x-auto pb-2 md:pb-0 scrollbar-hide">
-              {["All", "Urgent", "Events", "Academic", "Maintenance"].map(cat => (
-                <button 
-                  key={cat}
-                  onClick={() => setActiveCategory(cat)}
-                  className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase whitespace-nowrap transition-all ${
-                    activeCategory === cat ? 'bg-indigo-600 text-white shadow-md' : 'text-slate-500 hover:bg-slate-100'
-                  }`}
-                >
-                  {cat}
-                </button>
-              ))}
-            </div>
           </div>
         </div>
 
-        {/* 3. NOTICE FEED */}
-        <div className="max-w-4xl mx-auto space-y-4 pb-20">
-          {notices
-            .sort((a, b) => (b.isPinned - a.isPinned) || new Date(b.createdAt) - new Date(a.createdAt))
-            .filter(n => (activeCategory === "All" || n.category === activeCategory) && n.title.toLowerCase().includes(noticeSearch.toLowerCase()))
-            .map((notice) => {
-              const colors = {
-                Urgent: { 
-                  card: "bg-rose-50/30 border-rose-100 ring-rose-500/5", 
-                  header: "bg-rose-50/80 border-rose-100",
-                  badge: "bg-rose-500 text-white shadow-rose-200",
-                  title: "text-rose-900"
-                },
-                Academic: { 
-                  card: "bg-blue-50/30 border-blue-100 ring-blue-500/5", 
-                  header: "bg-blue-50/80 border-blue-100",
-                  badge: "bg-blue-500 text-white shadow-blue-200",
-                  title: "text-blue-900"
-                },
-                Maintenance: { 
-                  card: "bg-amber-50/30 border-amber-100 ring-amber-500/5", 
-                  header: "bg-amber-50/80 border-amber-100",
-                  badge: "bg-amber-500 text-white shadow-amber-200",
-                  title: "text-amber-900"
-                },
-                Events: { 
-                  card: "bg-purple-50/30 border-purple-100 ring-purple-500/5", 
-                  header: "bg-purple-50/80 border-purple-100",
-                  badge: "bg-purple-500 text-white shadow-purple-200",
-                  title: "text-purple-900"
-                }
-              }[notice.category] || { 
-                card: "bg-white border-slate-200 ring-slate-500/5", 
-                header: "bg-slate-50/80 border-slate-100",
-                badge: "bg-slate-800 text-white shadow-slate-200",
-                title: "text-slate-800"
-              };
+        {/* SEARCH & FILTERS */}
+        <div className="flex flex-col md:flex-row items-center gap-4 w-full">
+          {/* Search Bar */}
+          <div className="relative flex-1 w-full">
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
+            <input 
+              type="text" 
+              placeholder="Search notices..." 
+              className="w-full bg-white border border-slate-100 rounded-2xl py-3 pl-11 pr-4 text-sm font-medium focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none shadow-sm transition-all"
+              value={noticeSearch} 
+              onChange={(e) => setNoticeSearch(e.target.value)}
+            />
+          </div>
 
-              return (
-                <div key={notice._id} className={`group ${colors.card} rounded-3xl overflow-hidden border transition-all duration-300 hover:shadow-2xl hover:-translate-y-1 ${notice.isPinned ? 'ring-2 ring-amber-500/10' : ''}`}>
-                  
-                  {/* CARD HEADER (Title, Badges, Date) */}
-                  <div className={`p-6 md:p-8 border-b ${colors.header}`}>
-                    <div className="flex justify-between items-start gap-4">
-                      <div className="flex-1">
-                        <div className="flex flex-wrap items-center gap-2 mb-3">
-                          <span className={`text-[10px] font-black uppercase px-3 py-1 rounded-md shadow-md ${colors.badge}`}>
-                            {notice.category}
-                          </span>
-                          {notice.isPinned && (
-                            <span className="flex items-center gap-1 bg-amber-200 text-amber-800 text-[10px] font-black px-3 py-1 rounded-md shadow-sm">
-                              PINNED 📍
-                            </span>
-                          )}
-                          <span className="text-[10px] font-bold text-slate-500 bg-white/60 px-2 py-1 rounded-md border border-slate-200/50 ml-auto md:ml-0">
-                            {new Date(notice.createdAt).toLocaleDateString(undefined, { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' })}
-                          </span>
-                        </div>
-                        <h2 className={`text-2xl font-black leading-tight group-hover:text-indigo-600 transition-colors ${colors.title}`}>
-                          {notice.title}
-                        </h2>
-                      </div>
+          {/* Filters */}
+          <div className="flex items-center gap-2 w-full md:w-auto overflow-x-auto pb-2 md:pb-0 scrollbar-hide">
+            <div className="relative flex-1 md:flex-none">
+              <Filter className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={14} />
+              <select 
+                className="w-full md:w-40 bg-white border border-slate-100 rounded-2xl py-3 pl-10 pr-10 text-[11px] font-black uppercase tracking-wider appearance-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none shadow-sm cursor-pointer transition-all"
+                value={activeCategory} 
+                onChange={(e) => setActiveCategory(e.target.value)}
+              >
+                {CATEGORIES.map(cat => <option key={cat} value={cat}>{cat}</option>)}
+              </select>
+              <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
+                <ChevronDown size={14} />
+              </div>
+            </div>
 
-                      {/* TOOLBOX: PIN & DELETE */}
-                      <div className="flex flex-col gap-2 opacity-0 group-hover:opacity-100 transition-all transform translate-x-2 group-hover:translate-x-0">
-                        <button 
-                          onClick={() => handlePinNotice(notice._id, notice.isPinned)}
-                          className={`p-2.5 rounded-xl border transition shadow-sm ${notice.isPinned ? 'bg-amber-500 border-amber-500 text-white hover:bg-amber-600' : 'bg-white border-slate-200 text-slate-400 hover:text-amber-500 hover:border-amber-200'}`}
-                          title={notice.isPinned ? "Unpin Notice" : "Pin Notice"}
-                        >
-                          📌
-                        </button>
-                        <button 
-                          onClick={() => handleDeleteNotice(notice._id)}
-                          className="p-2.5 bg-white border border-slate-200 rounded-xl text-slate-400 hover:text-red-500 hover:border-red-100 hover:bg-red-50 transition shadow-sm"
-                          title="Delete Notice"
-                        >
-                          🗑️
-                        </button>
-                      </div>
+            <input
+              type="date"
+              className="bg-white border border-slate-100 rounded-2xl py-3 px-4 text-xs font-bold text-slate-600 shadow-sm focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all"
+              value={dateFilter}
+              onChange={(e) => setDateFilter(e.target.value)}
+            />
+            
+            <button
+              onClick={() => setShowPinnedOnly(!showPinnedOnly)}
+              className={`px-4 py-3 rounded-2xl text-[11px] font-black uppercase border shadow-sm transition whitespace-nowrap ${
+                showPinnedOnly
+                  ? "bg-amber-500 text-white border-amber-500"
+                  : "bg-white text-slate-600 border-slate-100"
+              }`}
+            >
+              <Pin size={12} className="inline mr-1 -mt-0.5" />
+              Pinned
+            </button>
+
+            {(noticeSearch || activeCategory !== "All" || dateFilter || showPinnedOnly) && (
+              <button  
+                onClick={() => {
+                  setNoticeSearch("");
+                  setActiveCategory("All");
+                  setDateFilter("");
+                  setShowPinnedOnly(false);
+                }}
+                className="bg-indigo-50 text-indigo-600 p-3 rounded-2xl hover:bg-indigo-100 transition-all flex items-center gap-2 border border-indigo-100 shadow-sm"
+              >
+                <RotateCcw size={16} />
+                <span className="text-[10px] font-black uppercase hidden lg:inline">Clear</span>
+              </button>
+            )}
+          </div>
+        </div>
+
+        {/* NOTICES LIST */}
+        <div className="space-y-4">
+          {filteredNotices.map((notice) => (
+            <div
+              key={notice._id}
+              className={`bg-white rounded-2xl p-5 border border-slate-100 shadow-sm transition-all hover:shadow-md ${notice.isPinned ? 'ring-1 ring-amber-500/20' : ''}`}
+            >
+              <div className="flex flex-col gap-4">
+                
+                {/* TOP ROW */}
+                <div className="flex items-start justify-between gap-3">
+                  {/* LEFT */}
+                  <div className="flex flex-col gap-2">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      {/* CATEGORY BADGE */}
+                      <span className={`text-[10px] font-bold px-2.5 py-1 rounded-full border ${getCategoryStyles(notice.category)}`}>
+                        {notice.category}
+                      </span>
+
+                      {/* PIN */}
+                      {notice.isPinned && (
+                        <span className="flex items-center gap-1 text-[10px] font-bold text-amber-600 bg-amber-50 px-2 py-1 rounded-full">
+                          <Pin size={10} />
+                          Pinned
+                        </span>
+                      )}
                     </div>
+
+                    {/* TITLE */}
+                    <h2 className="text-base font-semibold text-slate-800 leading-snug">
+                      {notice.title}
+                    </h2>
                   </div>
 
-                {/* CARD BODY (Content & Actions) */}
-                <div className="p-6 md:p-8">
-                  <p className="text-slate-600 text-base leading-relaxed font-medium whitespace-pre-wrap">
-                    {notice.content}
-                  </p>
-                
-                <div className="flex items-center justify-end border-t border-slate-100 pt-5 mt-2">
-                  {((notice.attachments && notice.attachments.length > 0) || (notice.links && notice.links.length > 0)) && (
-                    <button 
-                      onClick={() => setExpandedNoticeId(expandedNoticeId === notice._id ? null : notice._id)}
-                      className="text-indigo-600 text-[10px] font-black uppercase hover:underline tracking-widest"
+                  {/* ACTIONS */}
+                  <div className="flex items-center gap-2 shrink-0">
+                    {/* DATE */}
+                    <span className="hidden sm:flex items-center gap-1 text-xs text-slate-400 font-medium mr-2">
+                      <CalendarDays size={12} />
+                      {new Date(notice.createdAt).toLocaleDateString(undefined, {
+                        day: "numeric",
+                        month: "short",
+                      })}
+                    </span>
+                    <button
+                      onClick={() => handlePinNotice(notice._id, notice.isPinned)}
+                      className={`p-2 rounded-lg transition ${
+                        notice.isPinned
+                          ? "bg-amber-100 text-amber-600 hover:bg-amber-200"
+                          : "bg-slate-100 text-slate-400 hover:text-amber-500 hover:bg-amber-50"
+                      }`}
+                      title={notice.isPinned ? "Unpin Notice" : "Pin Notice"}
                     >
-                      {expandedNoticeId === notice._id ? 'Hide Attachments ↑' : 'View Attachments →'}
+                      <Pin size={16} />
+                    </button>
+                    <button
+                      onClick={() => handleDeleteNotice(notice._id)}
+                      className="p-2 bg-slate-100 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition"
+                      title="Delete Notice"
+                    >
+                      <Trash2 size={16} />
+                    </button>
+                  </div>
+                </div>
+
+                {/* CONTENT */}
+                <div className="text-sm text-slate-600 leading-relaxed">
+                  {expandedContentId === notice._id ? (
+                    <p className="whitespace-pre-wrap">{notice.content}</p>
+                  ) : (
+                    <p className="line-clamp-2 whitespace-pre-wrap">{notice.content}</p>
+                  )}
+
+                  {notice.content.length > 120 && (
+                    <button
+                      onClick={() =>
+                        setExpandedContentId(
+                          expandedContentId === notice._id ? null : notice._id
+                        )
+                      }
+                      className="text-indigo-600 text-xs font-semibold mt-1 hover:underline"
+                    >
+                      {expandedContentId === notice._id ? "Show Less" : "Show More"}
                     </button>
                   )}
                 </div>
 
-                {/* Attachments & Links Dropdown */}
-                {expandedNoticeId === notice._id && ((notice.attachments && notice.attachments.length > 0) || (notice.links && notice.links.length > 0)) && (
-                  <div className="mt-4 pt-4 border-t border-slate-50 space-y-4 bg-slate-50/50 p-4 rounded-2xl">
-                    {notice.attachments && notice.attachments.length > 0 && (
-                      <div>
-                        <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Attached Files</h4>
-                        <div className="flex flex-wrap gap-2">
-                          {notice.attachments.map((file, idx) => (
-                            <a 
-                              key={idx} 
-                              href={`http://localhost:5000${file.url}`} 
-                              target="_blank" 
-                              rel="noopener noreferrer"
-                              className="flex items-center gap-2 bg-white border border-slate-200 text-indigo-700 px-3 py-2 rounded-xl text-xs font-bold hover:border-indigo-300 hover:shadow-sm transition"
-                            >
-                              📄 {file.fileName || 'Attachment'}
-                            </a>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                    {notice.links && notice.links.length > 0 && (
-                      <div>
-                         <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">External Links</h4>
-                         <div className="flex flex-col gap-2">
-                           {notice.links.map((link, idx) => (
-                             <a 
-                               key={idx} 
-                               href={link.url} 
-                               target="_blank" 
-                               rel="noopener noreferrer"
-                               className="text-indigo-600 text-sm font-medium hover:underline flex items-center gap-1"
-                             >
-                               🔗 {link.label || link.url}
-                             </a>
-                           ))}
-                         </div>
-                      </div>
-                    )}
+                {/* FOOTER */}
+                <div className="flex items-center justify-between text-xs text-slate-400">
+                  <span className="sm:hidden flex items-center gap-1 text-xs text-slate-400 font-medium">
+                    <CalendarDays size={12} />
+                    {new Date(notice.createdAt).toLocaleDateString(undefined, {
+                      day: "numeric",
+                      month: "short",
+                    })}
+                  </span>
+                  
+                  {/* Empty space filler for layout */}
+                  <span className="hidden sm:block"></span>
+
+                  {(notice.attachments?.length > 0 || notice.links?.length > 0) && (
+                    <button
+                      onClick={() =>
+                        setExpandedAttachmentsId(
+                          expandedAttachmentsId === notice._id ? null : notice._id
+                        )
+                      }
+                      className="text-indigo-600 font-semibold hover:underline flex items-center gap-1 ml-auto"
+                    >
+                      Attachments <Info size={12} />
+                    </button>
+                  )}
+                </div>
+
+                {/* ATTACHMENTS */}
+                {expandedAttachmentsId === notice._id && (
+                  <div className="flex flex-wrap gap-2 pt-2 border-t border-slate-100">
+                    {notice.attachments?.map((file, idx) => (
+                      <a
+                        key={idx}
+                        href={`http://localhost:5000${file.url}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-xs bg-slate-100 hover:bg-slate-200 px-3 py-1 rounded-lg font-medium"
+                      >
+                        📎 {file.fileName || "File"}
+                      </a>
+                    ))}
+
+                    {notice.links?.map((link, idx) => (
+                      <a
+                        key={idx}
+                        href={link.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-xs bg-indigo-50 hover:bg-indigo-100 text-indigo-600 px-3 py-1 rounded-lg font-medium"
+                      >
+                        🔗 {link.label || "Open"}
+                      </a>
+                    ))}
                   </div>
                 )}
-                </div>
-                </div>
-                );
-              })}
+              </div>
+            </div>
+          ))}
 
-          {notices.length === 0 && (
-            <div className="text-center py-20 bg-white rounded-[3rem] border-2 border-dashed border-slate-200">
-              <div className="text-5xl mb-4">📭</div>
-              <p className="text-slate-400 font-black uppercase tracking-widest">The board is currently empty</p>
+          {filteredNotices.length === 0 && (
+            <div className="text-center py-20 bg-white rounded-[3rem] border-2 border-dashed border-slate-100 shadow-sm">
+              <TriangleAlert className="mx-auto text-slate-200 mb-4" size={40} />
+              <p className="text-slate-400 text-[10px] font-black uppercase tracking-widest">No matching updates found</p>
             </div>
           )}
         </div>
       </div>
+      
       <NoticeForm 
         isOpen={isModalOpen} 
         onClose={() => setIsModalOpen(false)} 
         onSuccess={fetchNotices} 
       />
-
     </DashboardLayout>
   );
 }

@@ -7,7 +7,7 @@ const noticeSchema = new mongoose.Schema({
   hostel: { type: mongoose.Schema.Types.ObjectId, ref: "Hostel" }, // removed required: true
   category: { 
     type: String, 
-    enum: ["Urgent", "Academic", "Maintenance", "Events"],
+    enum: ["Academic", "Maintenance", "Events"],
     default: "Events" 
   },
   isPinned: { type: Boolean, default: false },
@@ -28,4 +28,5 @@ const noticeSchema = new mongoose.Schema({
   priority: { type: String, enum: ["normal", "urgent"], default: "normal" }
 }, { timestamps: true });
 
+noticeSchema.index({ hostel: 1, createdAt: -1 })
 export default mongoose.model("Notice", noticeSchema);

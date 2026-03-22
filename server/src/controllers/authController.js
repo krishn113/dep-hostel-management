@@ -221,6 +221,28 @@ export const resetPassword = async (req, res) => {
   }
 }
 
+export const updatePhone = async (req, res) => {
+  try {
+    const { phone } = req.body;
+    if (!phone || !/^[0-9]{10}$/.test(phone)) {
+      return res.status(400).json({ msg: "Please enter a valid 10-digit phone number" });
+    }
+    const user = await User.findByIdAndUpdate(
+      req.user.id,
+      { phone },
+      { new: true }
+    ).select("-password").populate("hostelId", "name type");
+
+    res.json({
+      ...user.toObject(),
+      hostelName: user.hostelId ? user.hostelId.name : null,
+      hostelType: user.hostelId ? user.hostelId.type : null
+    });
+  } catch (err) {
+    res.status(500).json({ error: "Failed to update phone" });
+  }
+};
+
 export const getMe = async (req, res) => {
   try {
     const user = await User.findById(req.user.id).select("-password").populate("hostelId", "name type");

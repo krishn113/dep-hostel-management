@@ -3,6 +3,7 @@ import { useState, useEffect } from "react";
 import { useAuth } from "@/context/AuthContext";
 import DashboardLayout from "@/components/DashboardLayout";
 import API from "@/lib/api";
+import { useRouter } from "next/navigation";
 import { 
   Wrench, History, Plus, X, Clock, Calendar,
   CheckCircle2, ChevronDown, ChevronUp, AlertCircle,
@@ -15,6 +16,7 @@ const WORKING_HOURS = [9, 10, 11, 12, 13, 14, 15, 16];
 
 export default function StudentComplaints() {
   const { user } = useAuth();
+  const router = useRouter();
   const [complaints, setComplaints] = useState([]);
   const [showForm, setShowForm] = useState(false);
   const [expandedTimeline, setExpandedTimeline] = useState({});
@@ -30,6 +32,12 @@ export default function StudentComplaints() {
     description: "", 
     isUrgent: false 
   });
+
+  useEffect(() => {
+    if (user && !user.roomNumber) {
+      router.replace("/dashboard/student");
+    }
+  }, [user, router]);
 
   useEffect(() => { fetchMyComplaints(); }, []);
 
@@ -118,6 +126,9 @@ export default function StudentComplaints() {
       default: return 'bg-slate-400 text-white';
     }
   };
+
+  if (!user) return <div className="p-10 text-center text-indigo-600 font-bold animate-pulse">Loading...</div>;
+  if (!user.roomNumber) return null;
 
   return (
     <DashboardLayout role="student" activeTab="complaints">

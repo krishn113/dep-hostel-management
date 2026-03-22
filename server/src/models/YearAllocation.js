@@ -9,5 +9,4 @@ const yearAllocationSchema = new mongoose.Schema({
 
 // Ensure unique combination of year, gender, degreeType
 yearAllocationSchema.index({ year: 1, gender: 1, degreeType: 1 }, { unique: true });
-
 export default mongoose.model("YearAllocation", yearAllocationSchema);

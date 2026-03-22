@@ -4,8 +4,12 @@ import { useEffect, useState } from "react";
 import API from "@/lib/api";
 import DashboardLayout from "@/components/DashboardLayout";
 import { Plus, X, Search, Phone, CheckCircle2, AlertCircle, Package, Clock } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { useAuth } from "@/context/AuthContext";
 
 export default function LostFoundPage() {
+  const { user } = useAuth();
+  const router = useRouter();
   const [posts, setPosts] = useState([]);
   const [activeTab, setActiveTab] = useState("lost");
   const [showForm, setShowForm] = useState(false);
@@ -25,6 +29,13 @@ export default function LostFoundPage() {
     fetchPosts();
     fetchProfile();
   }, []);
+
+  
+  useEffect(() => {
+    if (user && !user.roomNumber) {
+      router.replace("/dashboard/student");
+    }
+  }, [user, router]);
 
   const fetchProfile = async () => {
     try {
@@ -98,6 +109,9 @@ export default function LostFoundPage() {
   const foundCount = posts.filter((p) => p.type === "found" && p.status !== "resolved").length;
   const myPostsCount = posts.filter((p) => p.postedBy?._id === currentUserId && p.status !== "resolved").length;
 
+  if (!user) return <div className="p-10 text-center text-indigo-600 font-bold animate-pulse">Loading...</div>;
+  if (!user.roomNumber) return null;
+ 
   return (
     <DashboardLayout role="student" activeTab="lost-found">
       <div className="max-w-5xl mx-auto space-y-8 pb-20">

@@ -2,10 +2,12 @@
 import { useState } from "react";
 import { useAuth } from "../context/AuthContext";
 import { useRouter, usePathname } from "next/navigation";
+import API from "@/lib/api";
 import {
   LogOut, Menu, X,
   LayoutDashboard, Bell, Wrench, FileText, Search,
-  Users, ClipboardList, Building2, UserCog, Home, Mail, Phone, DoorOpen
+  Users, ClipboardList, Building2, UserCog, Home, Mail, Phone, DoorOpen,
+  Pencil, Check
 } from "lucide-react";
 
 // Map icon keys to lucide components
@@ -23,11 +25,33 @@ const ICONS = {
 };
 
 export default function DashboardLayout({ children, role }) {
-  const { user, logout } = useAuth();
+  const { user, setUser, logout } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [editingPhone, setEditingPhone] = useState(false);
+  const [phoneInput, setPhoneInput] = useState("");
+  const [phoneError, setPhoneError] = useState("");
+  const [phoneLoading, setPhoneLoading] = useState(false);
+
+  const handleSavePhone = async () => {
+    if (!/^[0-9]{10}$/.test(phoneInput)) {
+      setPhoneError("Enter a valid 10-digit phone number");
+      return;
+    }
+    setPhoneLoading(true);
+    setPhoneError("");
+    try {
+      const res = await API.patch("/auth/update-phone", { phone: phoneInput });
+      setUser(res.data);
+      setEditingPhone(false);
+    } catch (err) {
+      setPhoneError(err.response?.data?.msg || "Failed to update phone");
+    } finally {
+      setPhoneLoading(false);
+    }
+  };
 
   const menus = {
     student: [
@@ -60,7 +84,11 @@ export default function DashboardLayout({ children, role }) {
     ],
   };
 
-  const currentMenu = menus[role] || [];
+  let currentMenu = menus[role] || [];
+
+  if ((role === "student" || user?.role === "student") && user && !user.roomNumber) {
+    currentMenu = currentMenu.filter(m => m.label === "Overview");
+  }
 
   const handleNav = (path) => {
     router.push(path);
@@ -323,12 +351,56 @@ export default function DashboardLayout({ children, role }) {
                     <Mail size={15} className="text-slate-400 shrink-0" />
                     <span className="text-sm truncate">{user.email}</span>
                   </p>
-                  {user.phone && (
-                    <p className="text-slate-800 font-bold flex items-center gap-3 pt-3 border-t border-slate-200/60">
+                  <div className="pt-3 border-t border-slate-200/60">
+                    <div className="flex items-center gap-3">
                       <Phone size={15} className="text-slate-400 shrink-0" />
-                      <span className="text-sm">{user.phone}</span>
-                    </p>
-                  )}
+                      {!editingPhone ? (
+                        <>
+                          <span className="text-sm font-bold text-slate-800 flex-1">
+                            {user.phone || <span className="text-slate-400 italic">No phone added</span>}
+                          </span>
+                          <button
+                            onClick={() => { setPhoneInput(user.phone || ""); setEditingPhone(true); setPhoneError(""); }}
+                            className="p-1.5 rounded-lg bg-slate-100 hover:bg-indigo-100 text-slate-500 hover:text-indigo-600 transition-all"
+                            title="Edit phone number"
+                          >
+                            <Pencil size={12} />
+                          </button>
+                        </>
+                      ) : (
+                        <div className="flex-1 space-y-2">
+                          <div className="flex gap-2">
+                            <input
+                              type="tel"
+                              value={phoneInput}
+                              onChange={e => { setPhoneInput(e.target.value); setPhoneError(""); }}
+                              maxLength={10}
+                              placeholder="10-digit number"
+                              className="flex-1 bg-slate-100 rounded-xl px-3 py-1.5 text-sm font-bold outline-none focus:ring-2 focus:ring-indigo-400 border border-slate-200 transition-all"
+                            />
+                            <button
+                              onClick={handleSavePhone}
+                              disabled={phoneLoading}
+                              className="p-1.5 rounded-xl bg-indigo-600 text-white hover:bg-indigo-700 disabled:opacity-50 transition-all"
+                              title="Save"
+                            >
+                              <Check size={14} />
+                            </button>
+                            <button
+                              onClick={() => { setEditingPhone(false); setPhoneError(""); }}
+                              className="p-1.5 rounded-xl bg-slate-200 text-slate-600 hover:bg-slate-300 transition-all"
+                              title="Cancel"
+                            >
+                              <X size={14} />
+                            </button>
+                          </div>
+                          {phoneError && (
+                            <p className="text-[10px] font-bold text-rose-500 ml-1">{phoneError}</p>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  </div>
                 </div>
               </div>
 

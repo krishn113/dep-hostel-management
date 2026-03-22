@@ -60,8 +60,10 @@ export const getNotices = async (req, res) => {
     }
 
     const notices = await Notice.find(query)
+      .select("title content category isPinned createdAt attachments links author") // include author
+      .populate("author", "name role")
       .sort({ isPinned: -1, createdAt: -1 })
-      .populate("author", "name");
+      .lean(); // 🔥 important
 
     res.status(200).json(notices);
   } catch (error) {

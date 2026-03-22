@@ -115,7 +115,7 @@ export default function NoticeForm({ isOpen, onClose, onSuccess }) {
               value={category}
               onChange={(e) => setCategory(e.target.value)}
             >
-              {["Urgent", "Academic", "Maintenance", "Events"].map(cat => (
+              {["Maintenance", "Events", "Other"].map(cat => (
                 <option key={cat} value={cat}>{cat}</option>
               ))}
             </select>

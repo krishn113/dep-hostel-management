@@ -5,9 +5,11 @@ import HostelLeavingModal from "@/components/forms/HostelLeavingModal";
 import GuestHouseModal from "@/components/forms/GuestHouseModal";
 import { DoorOpen, Building2, History, Info } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
+import { useRouter } from "next/navigation";
 
 export default function StudentForms() {
   const { user } = useAuth();
+  const router = useRouter();
   
   const initialLeaveForm = { 
     reason: "", leavingDate: "", returnDate: "", 
@@ -39,6 +41,12 @@ export default function StudentForms() {
   // Modal Toggles
   const [showLeaveModal, setShowLeaveModal] = useState(false);
   const [showGuestModal, setShowGuestModal] = useState(false);
+
+  useEffect(() => {
+    if (user && !user.roomNumber) {
+      router.replace("/dashboard/student");
+    }
+  }, [user, router]);
 
   const fetchMyForms = async () => {
     try {
@@ -116,6 +124,9 @@ export default function StudentForms() {
     const dateMatch = !dateFilter || new Date(form.leavingDate).toLocaleDateString() === new Date(dateFilter).toLocaleDateString();
     return statusMatch && dateMatch;
   });
+
+  if (!user) return <div className="p-10 text-center text-indigo-600 font-bold animate-pulse">Loading...</div>;
+  if (!user.roomNumber) return null;
 
   return (
     <DashboardLayout role="student" activeTab="forms">

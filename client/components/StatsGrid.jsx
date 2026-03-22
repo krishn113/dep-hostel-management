@@ -19,7 +19,7 @@ const StatCard = ({ label, value, icon, colorClass }) => {
 
       {/* TEXT AREA */}
       <div className="flex-1 min-w-0"> 
-        <p className="text-[10px] md:text-xs text-slate-500 font-bold uppercase tracking-widest mb-0.5 truncate">
+        <p className="text-[10px] md:text-xs text-slate-500 font-bold uppercase tracking-wider md:tracking-widest mb-0.5 leading-tight break-words">
           {label}
         </p>
         
@@ -41,8 +41,9 @@ const StatCard = ({ label, value, icon, colorClass }) => {
 };
 
 export default function StatsGrid({ stats }) {
+  const gridCols = stats.length === 2 ? "lg:grid-cols-2" : stats.length === 3 ? "lg:grid-cols-3" : "lg:grid-cols-4";
   return (
-    <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+    <div className={`grid grid-cols-2 ${gridCols} gap-4 mb-8`}>
       {stats.map((stat, index) => (
         <StatCard key={index} {...stat} />
       ))}
