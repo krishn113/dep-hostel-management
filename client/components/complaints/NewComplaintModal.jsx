@@ -3,7 +3,7 @@ import api from "@/lib/api"; // Adjust the path based on your folder structure
 import { useState } from "react";
 import { X, Tool, Home, Globe, AlertTriangle, Send } from "lucide-react";
 
-export default function NewComplaintModal({ isOpen, onClose, refreshData }) {
+export default function NewComplaintModal({ isOpen, onClose, refreshData, user }) {
   const [formData, setFormData] = useState({
     type: "Room", // Default
     category: "",
@@ -16,33 +16,40 @@ export default function NewComplaintModal({ isOpen, onClose, refreshData }) {
 
   const categories = ["Electrical", "Plumbing", "Furniture", "WiFi/LAN", "Other"];
 
-// Inside your NewComplaintModal component...
-
 const handleSubmit = async (e) => {
-  e.preventDefault();
-  
-  try {
-    // 1. Validate required fields
-    if (!formData.category || !formData.title) {
-      alert("Please fill in all required fields");
-      return;
-    }
+    e.preventDefault();
+    
+    try {
+      if (!formData.category || !formData.title || !formData.description) {
+        alert("Please fill in all required fields (Title, Category, and Description)");
+        return;
+      }
 
-    // 2. Make the API Call
-    // Assuming you have an 'API' utility or use axios directly
-    const response = await api.post("/complaints", formData);
+      const payload = {
+        ...formData,
+        // 2. Now 'user' is defined as a prop, so this won't throw an error!
+        hostelId: user?.hostelId || null 
+      };
 
-    if (response.status === 201) {
-      alert("Complaint Filed!");
-      refreshData(); // This refreshes the student's list
-      onClose();     // Close the modal
-      setFormData({ title: "", description: "", category: "Electrical", type: "Room", isUrgent: false });
+      const response = await api.post("/complaints", payload);
+
+      if (response.status === 201) {
+        alert("Complaint Filed Successfully!");
+        refreshData(); 
+        onClose();     
+        setFormData({ 
+          title: "", 
+          description: "", 
+          category: "Electrical", 
+          type: "Room", 
+          isUrgent: false 
+        });
+      }
+    } catch (err) {
+      console.error("Submission Error:", err);
+      alert(err.response?.data?.message || "Failed to submit complaint");
     }
-  } catch (err) {
-    console.error("Submission Error:", err);
-    alert(err.response?.data?.message || "Failed to submit complaint");
-  }
-};
+  };
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">

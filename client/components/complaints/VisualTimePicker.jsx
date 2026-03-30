@@ -1,6 +1,7 @@
 "use client";
 import { useState, useRef } from "react";
 import { Trash2, ArrowRight } from "lucide-react";
+import API from "@/lib/api";
 
 export default function VisualTimePicker({ freeSlots, setFreeSlots }) {
   const [isDragging, setIsDragging] = useState(false);
@@ -80,6 +81,18 @@ export default function VisualTimePicker({ freeSlots, setFreeSlots }) {
     }
     setStartPos(null);
     setCurrentPos(null);
+  };
+
+  const handleNotAvailable = async () => {
+    if (!window.confirm("Mark yourself as unavailable for this entire day? This will ask the caretaker to pick another date.")) return;
+    
+    try {
+      // Use the new endpoint we created above
+      await API.patch(`/complaints/${id}/reschedule`);
+      if (onUpdate) onUpdate(); // Refresh the list
+    } catch (err) {
+      alert("Failed to update status");
+    }
   };
 
   return (
@@ -170,6 +183,7 @@ export default function VisualTimePicker({ freeSlots, setFreeSlots }) {
                   <span className="text-sm font-black tracking-widest">{slot.endTime}</span>
                </div>
             </div>
+            
             <button 
               onClick={() => setFreeSlots(freeSlots.filter((_, i) => i !== idx))}
               className="p-2 text-rose-400 hover:bg-rose-500/10 rounded-xl transition-all"
@@ -177,6 +191,7 @@ export default function VisualTimePicker({ freeSlots, setFreeSlots }) {
               <Trash2 size={16} />
             </button>
           </div>
+          
         ))}
         {freeSlots.length === 0 && (
           <p className="text-center text-blue-300/20 text-[10px] uppercase font-bold py-8 tracking-widest">

@@ -57,6 +57,10 @@ export default function ComplaintDetailModal({ complaint, isOpen, onClose, onUpd
       
       alert("Availability shared successfully!");
       setIsEditing(false); 
+
+      if (onClose) {
+      onClose();
+    }
       
     } catch (err) {
       console.error("Submission error:", err);
@@ -77,6 +81,38 @@ export default function ComplaintDetailModal({ complaint, isOpen, onClose, onUpd
     });
   };
 
+const handleNotAvailable = async () => {
+    // FIX: Use complaint._id instead of the undefined 'id'
+    const complaintId = complaint?._id;
+
+    console.log("Attempting reschedule for ID:", complaintId); 
+    
+    if (!complaintId) {
+      alert("Error: Complaint ID is missing");
+      return;
+    }
+
+    if (!window.confirm("Mark yourself as unavailable for this date? This will ask the caretaker to reschedule.")) return;
+    
+    try {
+      setLoading(true);
+      // Ensure the URL matches your backend route
+      const res = await API.patch(`/complaints/${complaintId}/reschedule`);
+      
+      console.log("Response:", res.data);
+      
+      alert("Reschedule requested successfully!");
+      
+      if (onUpdate) onUpdate(); 
+      if (onClose) onClose();
+      
+    } catch (err) {
+      console.error("Error details:", err.response?.data || err.message);
+      alert(`Failed: ${err.response?.data?.message || "Server Error"}`);
+    } finally {
+      setLoading(false);
+    }
+  };
   const formatProposedDate = (dateString) => {
     if (!dateString) return "TBA";
     return new Date(dateString).toLocaleDateString('en-GB', { 
@@ -229,19 +265,32 @@ export default function ComplaintDetailModal({ complaint, isOpen, onClose, onUpd
           )}
         </div>
 
-        {/* Footer: Visible only during editing or initial state */}
+        {/* Footer */}
         {(complaint.status === "Get Slot" && (isEditing || !hasSubmittedSlots)) && (
-          <div className="p-6 bg-slate-50 border-t border-slate-100 flex justify-between items-center">
-            <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">
-              {freeSlots.length} Ranges Selected
-            </p>
-            <button 
-              onClick={handleConfirm}
-              disabled={freeSlots.length === 0 || loading}
-              className="px-10 py-4 bg-[#001D4C] text-white rounded-2xl font-bold text-[10px] uppercase tracking-widest hover:opacity-90 disabled:opacity-20 transition-all shadow-lg active:scale-95"
-            >
-              {loading ? "Syncing..." : hasSubmittedSlots ? "Update Availability" : "Confirm Availability"}
-            </button>
+          <div className="p-6 bg-slate-50 border-t border-slate-100 flex flex-col gap-4">
+            <div className="flex justify-between items-center">
+              <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">
+                {freeSlots.length} Ranges Selected
+              </p>
+            </div>
+            
+            <div className="flex gap-3">
+              <button
+                onClick={handleNotAvailable}
+                disabled={loading}
+                className="flex-1 py-4 rounded-2xl border border-rose-200 text-rose-500 bg-white text-[10px] font-black uppercase tracking-widest hover:bg-rose-50 transition-all disabled:opacity-50"
+              >
+                Not Available Today
+              </button>
+
+              <button 
+                onClick={handleConfirm}
+                disabled={freeSlots.length === 0 || loading}
+                className="flex-[2] py-4 bg-[#001D4C] text-white rounded-2xl font-bold text-[10px] uppercase tracking-widest hover:opacity-90 disabled:opacity-20 transition-all shadow-lg active:scale-95"
+              >
+                {loading ? "Syncing..." : hasSubmittedSlots ? "Update Availability" : "Confirm Availability"}
+              </button>
+            </div>
           </div>
         )}
       </div>

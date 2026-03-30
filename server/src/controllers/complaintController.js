@@ -2,11 +2,36 @@ import Complaint from "../models/Complaint.js";
 import YearAllocation from "../models/YearAllocation.js";
 import User from "../models/User.js"
 
-// FIX CREATE COMPLAINT
+
 export const createComplaint = async (req, res) => {
   try {
-    const { title, description, category, type, isUrgent, hostelId } = req.body;
-    
+    let { title, description, category, type, isUrgent, hostelId } = req.body;
+
+    // --- 1. AUTOMATIC HOSTEL DISCOVERY ---
+    if (!hostelId) {
+      if (req.user.hostelId) {
+        hostelId = req.user.hostelId;
+      } else {
+        // Search YearAllocation using the keys from your User Model
+        const allocation = await YearAllocation.findOne({
+          year: req.user.year,       // Matches User.js "year"
+          gender: req.user.gender,   // Matches User.js "gender"
+          $or: [
+            { degreeType: req.user.degreeType },
+            { degreeType: "All" }
+          ]
+        });
+
+        if (!allocation) {
+          return res.status(400).json({ 
+            message: "No hostel found for your year/gender/degree. Please contact admin." 
+          });
+        }
+        hostelId = allocation.hostelId;
+      }
+    }
+
+    // --- 2. CREATE COMPLAINT ---
     const newComplaint = new Complaint({
       student: req.user._id,
       hostelId,
@@ -14,8 +39,7 @@ export const createComplaint = async (req, res) => {
       description,
       category,
       type,
-      isUrgent,
-      // REQUIREMENT: Creator automatically upvotes General complaints
+      isUrgent: String(isUrgent) === 'true', 
       upvotes: type === "General" ? [req.user._id] : [],
       upvoteCount: type === "General" ? 1 : 0,
       timeline: { raisedAt: new Date() }
@@ -23,8 +47,10 @@ export const createComplaint = async (req, res) => {
 
     await newComplaint.save();
     res.status(201).json({ message: "Complaint raised successfully", complaint: newComplaint });
+
   } catch (error) {
-    res.status(500).json({ message: "Error creating complaint" });
+    console.error("DETAILED ERROR:", error);
+    res.status(500).json({ message: error.message || "Error creating complaint" });
   }
 };
 // FETCH COMPLAINTS
@@ -175,17 +201,41 @@ export const submitStudentSlots = async (req, res) => {
 export const scheduleVisit = async (req, res) => {
   try {
     const { id } = req.params;
-    const { start, end } = req.body; // e.g., { start: "10:00", end: "10:30" }
+    const { start, end } = req.body; 
 
     const complaint = await Complaint.findById(id);
-    if (!complaint) return res.status(404).json({ message: "Not found" });
+    if (!complaint) return res.status(404).json({ message: "Complaint not found" });
+
+    // Helper to convert "HH:mm" to minutes
+    const timeToMin = (t) => {
+      const [h, m] = t.split(':').map(Number);
+      return h * 60 + m;
+    };
+
+    const reqStart = timeToMin(start);
+    const reqEnd = timeToMin(end);
+
+    // Perform validation if it's a Room complaint (General ones usually have 9-6 open)
+    if (complaint.type !== "General") {
+      const isValid = complaint.freeSlots.some(slot => {
+        const slotStart = timeToMin(slot.startTime);
+        const slotEnd = timeToMin(slot.endTime);
+        return reqStart >= slotStart && reqEnd <= slotEnd;
+      });
+
+      if (!isValid) {
+        return res.status(400).json({ 
+          message: "The chosen time is outside the student's availability." 
+        });
+      }
+    }
 
     complaint.status = "Scheduled";
     complaint.scheduledVisit = { start, end };
     complaint.timeline.scheduledAt = new Date();
     
     await complaint.save();
-    res.status(200).json({ message: "Visit scheduled", complaint });
+    res.status(200).json({ message: "Visit scheduled successfully", complaint });
   } catch (error) {
     res.status(500).json({ message: "Scheduling failed", error: error.message });
   }
@@ -283,8 +333,7 @@ export const getStudentHistory = async (req, res) => {
   }
 };
 
-// Controller logic
-exports.rejectComplaint = async (req, res) => {
+export const rejectComplaint = async (req, res) => {
   const { reason } = req.body;
   const complaint = await Complaint.findByIdAndUpdate(
     req.params.id,
@@ -296,4 +345,33 @@ exports.rejectComplaint = async (req, res) => {
     { new: true }
   );
   res.status(200).json(complaint);
+};
+
+export const requestReschedule = async (req, res) => {
+  try {
+    // Add this log to see if the ID is reaching the backend
+    console.log("Backend received ID:", req.params.id);
+    
+    const complaint = await Complaint.findById(req.params.id);
+    if (!complaint) return res.status(404).json({ message: "Complaint not found" });
+
+    complaint.status = "Raised";
+    complaint.proposedDate = undefined;
+    complaint.freeSlots = [];
+
+    // Make sure req.user exists (from your protect middleware)
+    const updaterId = req.user ? req.user._id : complaint.student;
+
+    complaint.updates.push({
+      status: "Raised",
+      message: "Student marked as not available.",
+      updatedBy: updaterId
+    });
+
+    await complaint.save();
+    res.status(200).json({ message: "Reschedule requested" });
+  } catch (error) {
+    console.error("Reschedule Controller Error:", error);
+    res.status(500).json({ message: error.message });
+  }
 };

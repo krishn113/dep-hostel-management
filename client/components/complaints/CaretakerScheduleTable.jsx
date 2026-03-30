@@ -88,7 +88,9 @@ export default function CaretakerScheduleTable({ complaints, onUpdate, selectedD
     try {
       await API.patch(`/complaints/${id}/schedule-visit`, { start: startStr, end: endStr });
       onUpdate();
-    } catch (err) { alert("Scheduling failed"); }
+    } catch (err) { 
+      alert(err.response?.data?.message || "Scheduling failed"); 
+    }
   };
 
   const handleUnlock = async (e, id) => {
@@ -116,7 +118,6 @@ export default function CaretakerScheduleTable({ complaints, onUpdate, selectedD
             {items.map((c) => (
               <div key={c._id} className="bg-white rounded-[2rem] border border-slate-100 p-6 flex items-center gap-8 shadow-sm">
                 
-                {/* CLICKABLE STUDENT INFO SECTION */}
                 <div className="w-48 shrink-0">
                   <button 
                     onClick={() => onStudentClick && onStudentClick(c.student?._id)}
@@ -131,14 +132,11 @@ export default function CaretakerScheduleTable({ complaints, onUpdate, selectedD
                     <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-1">
                       Room {c.student?.roomNumber || c.student?.roomNo}
                     </p>
-                    <p className="text-[7px] text-blue-500 font-black uppercase tracking-tighter opacity-0 group-hover/name:opacity-100 transition-all mt-0.5">
-                      View History →
-                    </p>
                   </button>
                 </div>
 
-                <div className="flex-1 relative">
-                  <div className="flex justify-between text-[8px] font-bold text-slate-300 uppercase mb-2 px-1">
+                <div className="flex-1 space-y-4">
+                  <div className="flex justify-between text-[8px] font-bold text-slate-300 uppercase px-1">
                     <span>09:00</span><span>12:00</span><span>15:00</span><span>18:00</span>
                   </div>
 
@@ -154,7 +152,7 @@ export default function CaretakerScheduleTable({ complaints, onUpdate, selectedD
                       return (
                         <div 
                           key={i} 
-                          className="absolute top-0 bottom-0 bg-gradient-to-b from-emerald-50 to-teal-100/80 border-x border-teal-200/50 shadow-[inset_0_0_8px_rgba(20,184,166,0.1)]"
+                          className="absolute top-0 bottom-0 bg-gradient-to-b from-emerald-50 to-teal-100/80 border-x border-teal-200/50"
                           style={{ left: `${(start/TOTAL_MINS)*100}%`, width: `${((end-start)/TOTAL_MINS)*100}%` }}
                         />
                       );
@@ -163,21 +161,18 @@ export default function CaretakerScheduleTable({ complaints, onUpdate, selectedD
                     {hoverData.id === c._id && c.status !== "Scheduled" && (
                       <div 
                         className={`absolute top-0 bottom-0 z-30 flex flex-col items-center justify-center border-x-2 transition-all duration-75 pointer-events-none
-                          ${hoverData.isValid 
-                            ? "bg-orange-500 border-orange-600 shadow-[0_0_20px_rgba(249,115,22,0.4)]" 
-                            : "bg-slate-300 border-slate-400 opacity-50"}`}
+                          ${hoverData.isValid ? "bg-orange-500 border-orange-600" : "bg-slate-300 border-slate-400 opacity-50"}`}
                         style={{ left: `${hoverData.xPercent}%`, width: `${(SLOT_DURATION/TOTAL_MINS)*100}%` }}
                       >
-                        <span className="text-[7px] font-black text-white leading-none">{minToTime(hoverData.startMin)}</span>
+                        <span className="text-[7px] font-black text-white">{minToTime(hoverData.startMin)}</span>
                         <div className="h-[1px] w-4 bg-white/30 my-0.5" />
-                        <span className="text-[7px] font-black text-white leading-none">{minToTime(hoverData.startMin + SLOT_DURATION)}</span>
-                        {!hoverData.isValid && <AlertCircle size={10} className="text-white mt-1" />}
+                        <span className="text-[7px] font-black text-white">{minToTime(hoverData.startMin + SLOT_DURATION)}</span>
                       </div>
                     )}
 
                     {c.status === "Scheduled" && (
                       <div 
-                        className="absolute top-0 bottom-0 bg-emerald-500 z-20 flex flex-col items-center justify-center border-x-2 border-emerald-600 shadow-lg group/slot"
+                        className="absolute top-0 bottom-0 bg-emerald-500 z-20 flex flex-col items-center justify-center border-x-2 border-emerald-600 group/slot"
                         style={{ 
                           left: `${((timeToMin(c.scheduledVisit?.start) - DAY_START_MIN) / TOTAL_MINS) * 100}%`, 
                           width: `${(SLOT_DURATION/TOTAL_MINS) * 100}%` 
@@ -185,18 +180,63 @@ export default function CaretakerScheduleTable({ complaints, onUpdate, selectedD
                       >
                         <button 
                           onClick={(e) => handleUnlock(e, c._id)}
-                          className="absolute -top-1 -right-1 bg-white text-[#001D4C] rounded-full p-1.5 shadow-md scale-0 group-hover/slot:scale-100 transition-transform hover:bg-slate-50 border border-slate-100"
-                          title="Reschedule Slot"
+                          className="absolute -top-1 -right-1 bg-white text-[#001D4C] rounded-full p-1.5 shadow-md scale-0 group-hover/slot:scale-100 transition-transform"
                         >
                           <Unlock size={10} />
                         </button>
-                        
-                        <span className="text-[7px] font-black text-white uppercase">{c.scheduledVisit?.start}</span>
+                        <span className="text-[7px] font-black text-white">{c.scheduledVisit?.start}</span>
                         <Check size={10} className="text-white my-0.5" />
-                        <span className="text-[7px] font-black text-white uppercase">{c.scheduledVisit?.end}</span>
+                        <span className="text-[7px] font-black text-white">{c.scheduledVisit?.end}</span>
                       </div>
                     )}
                   </div>
+
+                  {/* TEXTBOX INPUT SECTION */}
+                  {c.status !== "Scheduled" && (
+                    <div className="flex items-center justify-between bg-slate-50/80 rounded-2xl p-3 border border-slate-100">
+                      <div className="flex flex-wrap gap-2">
+                        {c.freeSlots?.map((slot, i) => (
+                          <div key={i} className="flex items-center gap-1.5 px-2 py-1 bg-white border border-teal-100 rounded-lg shadow-sm">
+                            <div className="w-1.5 h-1.5 rounded-full bg-teal-500" />
+                            <span className="text-[9px] font-black text-teal-700">{slot.startTime} — {slot.endTime}</span>
+                          </div>
+                        ))}
+                      </div>
+
+                      <div className="flex items-center gap-2">
+                        <div className="flex items-center bg-white border border-slate-200 rounded-xl px-2 py-1 shadow-sm">
+                          <input 
+                            type="time" 
+                            className="text-[10px] font-bold text-[#001D4C] outline-none bg-transparent"
+                            value={hoverData.id === c._id ? minToTime(hoverData.startMin) : "09:00"}
+                            onChange={(e) => {
+                                const mins = timeToMin(e.target.value);
+                                setHoverData({ 
+                                    id: c._id, 
+                                    startMin: mins, 
+                                    xPercent: ((mins - DAY_START_MIN) / TOTAL_MINS) * 100,
+                                    isValid: checkIfValid(mins, c.freeSlots)
+                                });
+                            }}
+                          />
+                          <span className="mx-1 text-slate-300 text-[10px]">—</span>
+                          <input 
+                            type="time" 
+                            className="text-[10px] font-bold text-[#001D4C] outline-none bg-transparent opacity-50"
+                            value={hoverData.id === c._id ? minToTime(hoverData.startMin + SLOT_DURATION) : "09:30"}
+                            readOnly 
+                          />
+                        </div>
+                        <button 
+                          onClick={() => handleFinalize(c._id, hoverData.startMin, hoverData.isValid)}
+                          disabled={!hoverData.isValid || hoverData.id !== c._id}
+                          className="p-2 bg-[#001D4C] text-white rounded-xl disabled:opacity-20 transition-all"
+                        >
+                          <Check size={14} />
+                        </button>
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 <div className="flex gap-2 shrink-0">
@@ -204,13 +244,13 @@ export default function CaretakerScheduleTable({ complaints, onUpdate, selectedD
                     <>
                       <button 
                         onClick={() => API.patch(`/complaints/${c._id}/resolve-reset`, { isResolved: true }).then(onUpdate)} 
-                        className="p-3 bg-emerald-500 text-white rounded-xl hover:bg-emerald-600 transition-all hover:shadow-lg"
+                        className="p-3 bg-emerald-500 text-white rounded-xl"
                       >
                         <Check size={18}/>
                       </button>
                       <button 
                         onClick={() => API.patch(`/complaints/${c._id}/resolve-reset`, { isResolved: false }).then(onUpdate)} 
-                        className="p-3 bg-rose-500 text-white rounded-xl hover:bg-rose-600 transition-all hover:shadow-lg"
+                        className="p-3 bg-rose-500 text-white rounded-xl"
                       >
                         <X size={18}/>
                       </button>

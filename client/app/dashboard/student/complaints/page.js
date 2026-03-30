@@ -155,6 +155,7 @@ export default function StudentComplaintsPage() {
           isOpen={isNewModalOpen}
           onClose={() => setIsNewModalOpen(false)}
           refreshData={fetchComplaints}
+          user={user}
         />
 
         <ComplaintDetailModal

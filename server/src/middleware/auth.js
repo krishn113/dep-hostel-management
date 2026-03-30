@@ -1,7 +1,6 @@
 import jwt from "jsonwebtoken";
 import User from "../models/User.js";
 
-// middleware/auth.js
 export const protect = async (req, res, next) => {
   try {
     const header = req.headers.authorization;
@@ -11,14 +10,12 @@ export const protect = async (req, res, next) => {
     const token = header.split(" ")[1];
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
-    // Explicitly fetch the fields we need for the session
+    // Matches your User.js: "year", "gender", "degreeType"
     const user = await User.findById(decoded.id)
       .select("name role hostelId tokenVersion gender year degreeType"); 
 
     if (!user) return res.status(401).json({ msg: "User not found" });
 
-    // Ensure token version matches (Crucial for the 'Forever Fix')
-    // We use 'Number()' to ensure we aren't comparing a string to a number
     if (Number(user.tokenVersion) !== Number(decoded.tv)) {
       return res.status(401).json({ msg: "Session expired. Please login again." });
     }
