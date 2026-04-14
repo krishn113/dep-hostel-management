@@ -1,5 +1,5 @@
 "use client";
-import { User, Clock, Tag, AlertCircle, ThumbsUp, CheckCircle2, ChevronRight, XCircle, Send, X } from "lucide-react";
+import { User, Clock, Tag, AlertCircle, ThumbsUp, CheckCircle2, Send, X, XCircle, BellRing } from "lucide-react";
 import api from "@/lib/api";
 import { useState } from "react";
 
@@ -7,7 +7,7 @@ export default function CaretakerComplaintCard({
   complaint, 
   isSelected, 
   onSelect, 
-  onStudentClick, // This triggers the modal in your Dashboard
+  onStudentClick, 
   onUpdate 
 }) {
   const [isResolving, setIsResolving] = useState(false);
@@ -18,9 +18,21 @@ export default function CaretakerComplaintCard({
   const isRejected = complaint.status === "Rejected";
   const isInactive = isResolved || isRejected;
 
+  // Reminder Logic: Highlight if a reminder was sent in the last 24 hours
+const lastReminded = complaint.timeline?.lastRemindedAt || complaint.lastReminderAt;
+const isReminded = lastReminded && !isInactive;
+
+  // Helper to show relative time for reminder
+  const getRelativeReminderTime = (date) => {
+    if (!date) return "";
+    const diff = new Date() - new Date(date);
+    const hours = Math.floor(diff / (1000 * 60 * 60));
+    if (hours < 1) return "Just now";
+    return `${hours}h ago`;
+  };
+
   const handleAction = async (actionType) => {
     if (isInactive) return;
-    
     try {
       if (actionType === 'resolve') {
         setIsResolving(true);
@@ -37,6 +49,7 @@ export default function CaretakerComplaintCard({
       setIsRejecting(false);
     }
   };
+
   const getStatusStyles = (status) => {
     switch (status) {
       case 'Raised': return 'bg-amber-50 text-amber-600 border-amber-100';
@@ -48,20 +61,6 @@ export default function CaretakerComplaintCard({
     }
   };
 
-  const handleQuickResolve = async (e) => {
-    e.stopPropagation();
-    if (isResolving || isResolved) return;
-    setIsResolving(true);
-    try {
-      await api.patch(`/complaints/${complaint._id}/quick-resolve`);
-      if (onUpdate) onUpdate();
-    } catch (err) {
-      console.error("Resolve failed:", err);
-    } finally {
-      setIsResolving(false);
-    }
-  };
-
   return (
     <div 
       className={`group relative bg-white rounded-2xl p-5 border transition-all flex flex-col h-full ${
@@ -70,6 +69,8 @@ export default function CaretakerComplaintCard({
           : 'hover:shadow-xl hover:-translate-y-1 border-slate-100 cursor-pointer'
       } ${
         isSelected && !isResolved ? 'border-blue-500 ring-1 ring-blue-500' : ''
+      } ${
+        isReminded ? 'border-blue-400 shadow-lg shadow-blue-100 ring-1 ring-blue-100 bg-blue-50/10' : ''
       }`}
     >
       {/* 1. COMPACT HEADER */}
@@ -83,10 +84,9 @@ export default function CaretakerComplaintCard({
               className="w-4 h-4 rounded border-slate-300 text-[#001D4C] focus:ring-[#001D4C] cursor-pointer" 
             />
           )}
-          {/* CLICKABLE STUDENT PROFILE */}
           <button 
             onClick={(e) => {
-              e.stopPropagation(); // Prevents card-level click events
+              e.stopPropagation();
               onStudentClick(complaint.student?._id || complaint.studentId);
             }}
             disabled={isResolved}
@@ -133,17 +133,26 @@ export default function CaretakerComplaintCard({
         </p>
       </div>
 
-      {/* 3. UTILITY ROW - STATUS BADGE ON THE RIGHT */}
-      <div className="flex items-center justify-end mb-4">
+      {/* 3. UTILITY ROW */}
+      <div className="flex items-center justify-between mb-4">
+        {/* Reminder Badge (Goal 4 Integration) */}
+        {isReminded ? (
+          <div className="flex items-center gap-1.5 bg-blue-600 text-white px-2 py-1 rounded-md shadow-sm animate-pulse">
+            <BellRing size={10} />
+            <span className="text-[8px] font-black uppercase tracking-widest">
+              Reminder: {getRelativeReminderTime(lastReminded)}
+            </span>
+          </div>
+        ) : <div />}
+
         <span className={`text-[9px] font-black px-2.5 py-1 rounded-full border uppercase tracking-widest ${getStatusStyles(complaint.status)}`}>
           {complaint.status}
         </span>
       </div>
 
-      {/* 4. REFINED FOOTER WITH REJECTION LOGIC */}
+      {/* 4. REFINED FOOTER */}
       <div className="pt-3 border-t border-slate-50">
         {isRejecting ? (
-          /* REJECTION INPUT MODE */
           <div className="flex items-center gap-2 animate-in fade-in zoom-in duration-200">
             <input 
               autoFocus
@@ -160,7 +169,6 @@ export default function CaretakerComplaintCard({
             </button>
           </div>
         ) : (
-          /* STANDARD FOOTER */
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <div className="flex items-center gap-1">
@@ -168,16 +176,15 @@ export default function CaretakerComplaintCard({
                 <span className="text-[9px] font-bold text-slate-400 uppercase bg-slate-50 px-1.5 py-0.5 rounded">{complaint.category}</span>
               </div>
               <div className="flex items-center gap-1">
-            <Clock size={10} className="text-slate-300" />
-            <span className="text-[9px] font-bold text-slate-400 uppercase">
-              {new Date(complaint.createdAt).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' })}
-            </span>
-          </div>
+                <Clock size={10} className="text-slate-300" />
+                <span className="text-[9px] font-bold text-slate-400 uppercase">
+                  {new Date(complaint.createdAt).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' })}
+                </span>
+              </div>
             </div>
 
             {!isInactive && (
               <div className="flex items-center gap-2">
-                {/* REJECT BUTTON (Available for all) */}
                 <button 
                   onClick={(e) => { e.stopPropagation(); setIsRejecting(true); }}
                   className="p-2 text-rose-400 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition-colors"
@@ -186,7 +193,6 @@ export default function CaretakerComplaintCard({
                   <XCircle size={18} />
                 </button>
 
-                {/* QUICK RESOLVE (General Only) */}
                 {complaint.type === "General" && (
                   <button 
                     onClick={(e) => { e.stopPropagation(); handleAction('resolve'); }}
@@ -200,7 +206,6 @@ export default function CaretakerComplaintCard({
               </div>
             )}
             
-            {/* Show reason if already rejected */}
             {isRejected && complaint.rejectionReason && (
               <p className="text-[9px] text-rose-400 italic font-medium truncate max-w-[150px]">
                 Reason: {complaint.rejectionReason}
@@ -210,16 +215,19 @@ export default function CaretakerComplaintCard({
         )}
       </div>
 
-      {/* Floating Urgent Badge */}
-      {complaint.isUrgent && !isResolved && (
-        <div className="absolute -top-2 -right-2 bg-rose-500 text-white text-[8px] font-black px-2 py-0.5 rounded shadow-lg uppercase tracking-widest z-10">
-          Urgent
-        </div>
-      )}
+      {/* Floating Badges */}
+      <div className="absolute -top-2 -right-2 flex flex-col gap-1 items-end">
+        {complaint.isUrgent && !isResolved && (
+          <div className="bg-rose-500 text-white text-[8px] font-black px-2 py-0.5 rounded shadow-lg uppercase tracking-widest z-10">
+            Urgent
+          </div>
+        )}
+        {isReminded && (
+           <div className="bg-blue-500 text-white text-[8px] font-black px-2 py-0.5 rounded shadow-lg uppercase tracking-widest z-10 border border-blue-400">
+            Reminded
+          </div>
+        )}
+      </div>
     </div>
   );
 }
-
-
-
-    

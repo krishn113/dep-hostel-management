@@ -48,7 +48,7 @@ export default function CaretakerHubHeader({
             MAINTENANCE HUB
           </h1>
           <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.4em] mt-1 italic pl-1">
-            System Overview & Control
+          
           </p>
         </div>
       </div>

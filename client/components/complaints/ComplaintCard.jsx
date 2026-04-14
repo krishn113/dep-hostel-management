@@ -1,21 +1,22 @@
 "use client";
-import { Clock, Bell, ThumbsUp, AlertCircle, ChevronRight } from "lucide-react";
+import { Clock, Bell, ThumbsUp, AlertCircle, ChevronRight, Trash2, CheckCircle } from "lucide-react";
 import api from "@/lib/api";
 import { useState, useEffect, useMemo } from "react";
 
 export default function ComplaintCard({ complaint, activeTab, onClick, currentUserId, onUpdate }) {
   
-  // 1. Bulletproof check for "Already Voted"
-const isCurrentlyUpvoted = useMemo(() => {
-    if (!currentUserId || !complaint) return false;
+  // Logic for UI states
+  const isResolved = complaint.status === "Resolved" || complaint.status === "Rejected";
+  const canBeResolved = complaint.status === "Scheduled"; // Specific requirement check
+  const [isProcessing, setIsProcessing] = useState(false);
 
+  // Upvote Logic
+  const isCurrentlyUpvoted = useMemo(() => {
+    if (!currentUserId || !complaint) return false;
     const curId = currentUserId.toString();
-    
-    // Safety check: ensure student exists before calling toString
     const creatorId = complaint.student?._id?.toString() || complaint.student?.toString();
     const isCreator = creatorId === curId;
     
-    // Safety check: filter out any null/undefined from upvotes array
     const inUpvoteList = Array.isArray(complaint.upvotes) && 
                          complaint.upvotes
                            .filter(id => id != null) 
@@ -27,89 +28,117 @@ const isCurrentlyUpvoted = useMemo(() => {
   const [hasUpvoted, setHasUpvoted] = useState(isCurrentlyUpvoted);
   const [votes, setVotes] = useState(complaint.upvoteCount || 0);
 
-  const [isProcessing, setIsProcessing] = useState(false);
-
-  // Sync state when props change
   useEffect(() => {
     setHasUpvoted(isCurrentlyUpvoted);
     setVotes(complaint.upvoteCount || 0);
   }, [isCurrentlyUpvoted, complaint.upvoteCount]);
 
+  // --- Handlers ---
+
   const handleUpvote = async (e) => {
     e.stopPropagation();
-    e.preventDefault();
-    
-    // 1. Immediate exit if already voted or currently sending to server
     if (hasUpvoted || isProcessing) return;
     setIsProcessing(true);
-
     const originalVotes = votes;
     try {
-      // Optimistic Update: make it look voted instantly
       setHasUpvoted(true);
       setVotes(prev => prev + 1);
-
       const res = await api.patch(`/complaints/${complaint._id}/upvote`);
-      
-      const { upvoteCount, hasUpvoted: serverHasUpvoted } = res.data;
-      
-      // Sync with server results
-      setVotes(upvoteCount);
-      setHasUpvoted(serverHasUpvoted);
-
-      // 2. Prepare the updated upvotes array for the parent state
-      let updatedUpvotes = [...(complaint.upvotes || [])];
-      
-      const alreadyInList = updatedUpvotes
-        .filter(id => id != null)
-        .some(id => id.toString() === currentUserId?.toString());
-
-      if (!alreadyInList && currentUserId) {
-        updatedUpvotes.push(currentUserId);
-      }
-
-      // Update parent list so the change persists
-      onUpdate?.(complaint._id, {
-        upvoteCount: upvoteCount,
-        upvotes: updatedUpvotes
+      onUpdate?.(complaint._id, { 
+        upvoteCount: res.data.upvoteCount, 
+        upvotes: [...(complaint.upvotes || []), currentUserId] 
       });
-      
     } catch (err) {
-      // Revert if the server says no
       setHasUpvoted(false);
       setVotes(originalVotes);
-      console.error("Upvote failed:", err);
     } finally {
-      // CRITICAL: Always unlock the processing state, 
-      // whether success or failure
       setIsProcessing(false);
     }
   };
 
-  const isInactive = complaint.status === "Resolved" || complaint.status === "Rejected";
+  const handleDelete = async (e) => {
+  e.stopPropagation();
+  if (!window.confirm("Are you sure you want to delete this complaint?")) return;
 
-  const getStatusStyles = (status) => {
-  switch (status) {
-    case 'Raised': return 'bg-amber-50 text-amber-600 border-amber-100';
-    case 'Get Slot': return 'bg-blue-600 text-white border-blue-600 shadow-md animate-pulse';
-    case 'Scheduled': return 'bg-emerald-50 text-emerald-600 border-emerald-100';
-    case 'Resolved': return 'bg-slate-100 text-slate-500 border-slate-200';
-    case 'Rejected': return 'bg-rose-50 text-rose-500 border-rose-100'; // Added Rejected style
-    default: return 'bg-slate-50 text-slate-400 border-slate-100';
+  try {
+    setIsProcessing(true);
+    // Use backticks for the template literal
+    const res = await api.delete(`/complaints/${complaint._id}`);
+    
+    if (res.status === 200 || res.status === 204) {
+      alert("Deleted successfully");
+      if (onUpdate) onUpdate();
+    }
+  } catch (err) {
+    console.error("Delete Error details:", err.response);
+    // This will tell you if it's a 401 (Auth), 404 (Path), or 500 (Server)
+    alert(err.response?.data?.message || "Server rejected the delete request");
+  } finally {
+    setIsProcessing(false);
   }
 };
 
-  
+ const handleResolve = async (e) => {
+  if (e) e.stopPropagation();
+  if (!window.confirm("Mark as resolved?")) return;
+
+  try {
+    setIsProcessing(true);
+    const res = await api.patch(`/complaints/${complaint._id}/manage`, { 
+      action: "Resolve" 
+    });
+    
+    alert(res.data.message);
+    if (onUpdate) onUpdate();
+  } catch (err) {
+    // Log this to see the "details" we added in the backend fix above
+    console.log("Error Data:", err.response?.data);
+    alert(err.response?.data?.details || "Update failed on server");
+  } finally {
+    setIsProcessing(false);
+  }
+};
+
+const handleReminder = async (e) => {
+  e.stopPropagation();
+  if (isProcessing) return;
+
+  try {
+    setIsProcessing(true);
+    const res = await api.post(`/complaints/${complaint._id}/remind`);
+    
+    // Success feedback
+    alert(res.data.message);
+  } catch (err) {
+    // Handling the 429 Cooldown error or other issues
+    const errorMsg = err.response?.data?.message || "Could not send reminder";
+    alert(errorMsg);
+  } finally {
+    setIsProcessing(false);
+  }
+};
+
+  const getStatusStyles = (status) => {
+    switch (status) {
+      case 'Raised': return 'bg-amber-50 text-amber-600 border-amber-100';
+      case 'Get Slot': return 'bg-blue-600 text-white border-blue-600 shadow-md animate-pulse';
+      case 'Scheduled': return 'bg-emerald-50 text-emerald-600 border-emerald-100';
+      case 'Resolved': return 'bg-slate-100 text-slate-500 border-slate-200';
+      case 'Rejected': return 'bg-rose-50 text-rose-500 border-rose-100';
+      default: return 'bg-slate-50 text-slate-400 border-slate-100';
+    }
+  };
+
   const needsAction = complaint.status === "Get Slot" && (!complaint.freeSlots || complaint.freeSlots.length === 0);
 
   return (
     <div 
       onClick={() => onClick(complaint)}
       className={`group relative bg-white rounded-2xl p-5 border transition-all cursor-pointer 
-      ${isInactive ? 'opacity-60 grayscale-[0.4] border-slate-100' : 'hover:shadow-xl hover:-translate-y-1'}
+      ${isResolved ? 'opacity-70 grayscale-[0.2] border-slate-100' : 'hover:shadow-xl hover:-translate-y-1'}
       ${needsAction ? 'border-blue-400 shadow-lg shadow-blue-50' : 'border-slate-100'}
     `}
-  >
+    >
       <div className="flex justify-between items-start mb-4">
         <div className="flex flex-col gap-1">
           <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
@@ -135,9 +164,27 @@ const isCurrentlyUpvoted = useMemo(() => {
               <span className="text-[10px] font-black">{votes}</span>
             </button>
           ) : (
-            <button className="p-2 rounded-lg border border-slate-100 bg-slate-50 text-slate-300">
-              <Bell size={16} />
-            </button>
+            <div className="flex gap-1">
+               {!isResolved && (
+                <button 
+                  onClick={handleDelete}
+                  className="p-2 rounded-lg border border-rose-100 bg-rose-50 text-rose-400 hover:bg-rose-100 transition-colors"
+                  title="Delete"
+                >
+                  <Trash2 size={14} />
+                </button>
+              )}
+              <button 
+  onClick={handleReminder}
+  disabled={isProcessing}
+  className={`p-2 rounded-lg border border-slate-100 bg-slate-50 transition-colors ${
+    isProcessing ? 'opacity-50' : 'text-slate-400 hover:text-blue-600 hover:border-blue-200'
+  }`}
+  title="Send Reminder"
+>
+  <Bell size={14} className={isProcessing ? "animate-bounce" : ""} />
+</button>
+            </div>
           )}
         </div>
       </div>
@@ -158,9 +205,24 @@ const isCurrentlyUpvoted = useMemo(() => {
         <span className="text-[10px] font-bold text-slate-400 uppercase bg-slate-50 px-2 py-1 rounded">
           {complaint.category}
         </span>
-        <div className="flex items-center gap-1 text-[#001D4C] opacity-0 group-hover:opacity-100 transition-opacity">
-          <span className="text-[9px] font-bold uppercase tracking-widest">Details</span>
-          <ChevronRight size={12} />
+        
+        <div className="flex items-center gap-2">
+          {/* Quick Resolve Action - Only shows on hover if status is Scheduled */}
+          {canBeResolved && (
+            <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity mr-2">
+              <button 
+                onClick={handleResolve}
+                className="flex items-center gap-1 text-[9px] font-black text-emerald-600 uppercase tracking-tighter bg-emerald-50 px-2 py-1 rounded hover:bg-emerald-100"
+              >
+                <CheckCircle size={10} /> Resolve
+              </button>
+            </div>
+          )}
+          
+          <div className="flex items-center gap-1 text-[#001D4C]">
+            <span className="text-[9px] font-bold uppercase tracking-widest">Details</span>
+            <ChevronRight size={12} />
+          </div>
         </div>
       </div>
 
@@ -170,10 +232,10 @@ const isCurrentlyUpvoted = useMemo(() => {
         </div>
       )}
       {complaint.status === "Rejected" && complaint.rejectionReason && (
-      <p className="mt-2 text-[10px] text-rose-500 italic font-medium">
-        Note: {complaint.rejectionReason}
-      </p>
-    )}
+        <p className="mt-2 text-[10px] text-rose-500 italic font-medium">
+          Note: {complaint.rejectionReason}
+        </p>
+      )}
     </div>
   );
 }

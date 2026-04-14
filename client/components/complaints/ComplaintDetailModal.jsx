@@ -1,7 +1,7 @@
 "use client";
 import { useState, useEffect } from "react";
 import VisualTimePicker from "./VisualTimePicker";
-import { X, CheckCircle2, Circle, Calendar as CalIcon, AlertCircle, Edit3, Check, Clock, ThumbsUp } from "lucide-react";
+import { X, CheckCircle2, Circle, Calendar as CalIcon, Trash2, CheckCircle, AlertCircle, Edit3, Check, Clock, ThumbsUp } from "lucide-react";
 import API from "@/lib/api";
 
 export default function ComplaintDetailModal({ complaint, isOpen, onClose, onUpdate }) {
@@ -22,6 +22,7 @@ export default function ComplaintDetailModal({ complaint, isOpen, onClose, onUpd
   if (!isOpen || !complaint) return null;
 
   const isGeneral = complaint.type === "General";
+  const isResolved = complaint.status === "Resolved";
   const hasSubmittedSlots = complaint.freeSlots && complaint.freeSlots.length > 0;
 
   const steps = isGeneral 
@@ -113,6 +114,39 @@ const handleNotAvailable = async () => {
       setLoading(false);
     }
   };
+
+
+  const handleDelete = async () => {
+    if (!window.confirm("Are you sure you want to delete this complaint? This action cannot be undone.")) return;
+    try {
+      setLoading(true);
+      await API.delete(`/complaints/${complaint._id}`);
+      alert("Complaint deleted.");
+      if (onUpdate) onUpdate(); // Refresh the list
+      onClose();
+    } catch (err) {
+      alert(err.response?.data?.message || "Delete failed");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleResolve = async () => {
+    if (!window.confirm("Is your issue fixed? Marking as resolved will close this complaint.")) return;
+    try {
+      setLoading(true);
+      // Reusing your existing quickResolve endpoint
+      await API.patch(`/complaints/${complaint._id}/resolve`, { isResolved: true });
+      alert("Status updated to Resolved!");
+      if (onUpdate) onUpdate();
+      onClose();
+    } catch (err) {
+      alert("Failed to resolve complaint");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const formatProposedDate = (dateString) => {
     if (!dateString) return "TBA";
     return new Date(dateString).toLocaleDateString('en-GB', { 
@@ -136,6 +170,15 @@ const handleNotAvailable = async () => {
         {/* Header */}
         <div className="bg-slate-50 px-8 py-6 border-b border-slate-100 flex justify-between items-center">
           <div className="flex items-center gap-3">
+            {!isResolved && (
+              <button 
+                onClick={handleDelete}
+                className="p-2 mr-2 text-rose-400 hover:bg-rose-50 rounded-full transition-colors group"
+                title="Delete Complaint"
+              >
+                <Trash2 size={18} className="group-hover:scale-110 transition-transform" />
+              </button>
+            )}
             <span className="text-[10px] font-black text-blue-600 bg-blue-100/50 px-3 py-1 rounded-full uppercase tracking-widest">
               {complaint.category}
             </span>
@@ -266,6 +309,17 @@ const handleNotAvailable = async () => {
         </div>
 
         {/* Footer */}
+        <div className="p-6 bg-slate-50 border-t border-slate-100 space-y-4">
+          {!isResolved && (
+            <button 
+              onClick={handleResolve}
+              disabled={loading}
+              className="w-full py-3 bg-emerald-50 text-emerald-600 border border-emerald-100 rounded-2xl font-black text-[10px] uppercase tracking-[0.2em] flex items-center justify-center gap-2 hover:bg-emerald-100 transition-all active:scale-[0.98]"
+            >
+              <CheckCircle size={14} /> Mark as Resolved & Close
+            </button>
+          )}
+
         {(complaint.status === "Get Slot" && (isEditing || !hasSubmittedSlots)) && (
           <div className="p-6 bg-slate-50 border-t border-slate-100 flex flex-col gap-4">
             <div className="flex justify-between items-center">
@@ -280,7 +334,7 @@ const handleNotAvailable = async () => {
                 disabled={loading}
                 className="flex-1 py-4 rounded-2xl border border-rose-200 text-rose-500 bg-white text-[10px] font-black uppercase tracking-widest hover:bg-rose-50 transition-all disabled:opacity-50"
               >
-                Not Available Today
+                Not Available
               </button>
 
               <button 
@@ -293,6 +347,7 @@ const handleNotAvailable = async () => {
             </div>
           </div>
         )}
+        </div>
       </div>
     </div>
   );

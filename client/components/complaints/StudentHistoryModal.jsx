@@ -1,166 +1,151 @@
 "use client";
-import { X, User, MapPin, History, CheckCircle2, Clock, Mail, Phone, Hash, graduationCap, GraduationCap } from "lucide-react";
+import { X, User, MapPin, History, CheckCircle2, Clock, Mail, Phone, Hash, GraduationCap, Calendar, ChevronRight } from "lucide-react";
 
 export default function StudentHistoryModal({ isOpen, onClose, studentData }) {
   if (!isOpen || !studentData) return null;
 
-  // Calculate stats
   const totalComplaints = studentData.history?.length || 0;
-  const resolvedComplaints = studentData.history?.filter(h => h.status === 'Resolved').length || 0;
+
+  // Helper to calculate resolution time
+  const getDaysToResolve = (start, end) => {
+    if (!start || !end) return "-";
+    const diffTime = Math.abs(new Date(end) - new Date(start));
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    return `${diffDays} Day${diffDays > 1 ? 's' : ''}`;
+  };
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-      {/* Backdrop */}
-      <div 
-        className="absolute inset-0 bg-[#001D4C]/30 backdrop-blur-sm transition-opacity" 
-        onClick={onClose}
-      />
+      <div className="absolute inset-0 bg-[#001D4C]/30 backdrop-blur-sm transition-opacity" onClick={onClose} />
       
-      {/* Modal Card */}
-      <div className="relative bg-white w-full max-w-2xl rounded-[2.5rem] shadow-2xl overflow-hidden flex flex-col max-h-[90vh] animate-in fade-in zoom-in duration-200">
+      <div className="relative bg-white w-full max-w-4xl rounded-[2.5rem] shadow-2xl overflow-hidden flex flex-col max-h-[90vh] animate-in fade-in zoom-in duration-200">
         
-        {/* 1. HEADER SECTION: Personal Details */}
-        <div className="bg-slate-50 p-8">
+        {/* HEADER SECTION */}
+        <div className="bg-slate-50 p-8 border-b border-slate-100">
           <div className="flex justify-between items-start mb-6">
             <div className="flex gap-6 items-center">
-              <div className="w-20 h-20 bg-white rounded-[1.5rem] shadow-sm flex items-center justify-center text-[#001D4C] border border-slate-100 relative">
-                <User size={40} />
-                <div className="absolute -bottom-2 -right-2 bg-emerald-500 text-white p-1.5 rounded-lg border-4 border-slate-50">
-                  <CheckCircle2 size={12} />
-                </div>
+              <div className="w-16 h-16 bg-white rounded-2xl shadow-sm flex items-center justify-center text-[#001D4C] border border-slate-200">
+                <User size={32} />
               </div>
               <div>
-                <h2 className="text-2xl font-black text-[#001D4C] uppercase tracking-tighter leading-none mb-2">
+                <h2 className="text-xl font-black text-[#001D4C] uppercase tracking-tighter mb-1">
                   {studentData.name}
                 </h2>
-                <div className="flex flex-wrap gap-x-4 gap-y-2">
-                  <span className="flex items-center gap-1.5 text-[9px] font-black text-slate-400 uppercase tracking-widest bg-white px-2 py-1 rounded-md border border-slate-100">
-                    <Hash size={10} className="text-blue-500" /> {studentData.entryNo || "2023CSB1001"}
+                <div className="flex gap-3">
+                   <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest bg-white px-2 py-1 rounded border border-slate-100">
+                    <Hash size={10} className="inline mr-1 text-blue-500" /> {studentData.entryNo || "2023CSB1001"}
                   </span>
-                  <span className="flex items-center gap-1.5 text-[9px] font-black text-slate-400 uppercase tracking-widest bg-white px-2 py-1 rounded-md border border-slate-100">
-                    <MapPin size={10} className="text-rose-500" /> Room {studentData.roomNo} ({studentData.floor || "2nd"} Floor)
+                  <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest bg-white px-2 py-1 rounded border border-slate-100">
+                    <MapPin size={10} className="inline mr-1 text-rose-500" /> Room {studentData.roomNo}
                   </span>
                 </div>
               </div>
             </div>
-            <button 
-              onClick={onClose}
-              className="p-2 hover:bg-slate-200 rounded-xl transition-colors text-slate-400"
-            >
+            <button onClick={onClose} className="p-2 hover:bg-slate-200 rounded-xl transition-colors text-slate-400">
               <X size={20} />
             </button>
           </div>
 
-          {/* Contact & Academic Grid */}
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <div className="flex items-center gap-2 text-slate-500">
-                <Mail size={14} className="text-blue-500" />
-                <span className="text-[11px] font-medium truncate">{studentData.email}</span>
-              </div>
-              <div className="flex items-center gap-2 text-slate-500">
-                <Phone size={14} className="text-emerald-500" />
-                <span className="text-[11px] font-medium">{studentData.phone || "+91 98765 43210"}</span>
-              </div>
+          <div className="grid grid-cols-3 gap-6">
+            <div className="flex items-center gap-3 bg-white p-3 rounded-2xl border border-slate-100">
+                <div className="p-2 bg-blue-50 rounded-lg text-blue-600"><Mail size={16}/></div>
+                <div className="flex flex-col"><span className="text-[8px] font-black text-slate-300 uppercase">Email</span><span className="text-xs font-bold text-slate-600">{studentData.email}</span></div>
             </div>
-            <div className="space-y-2 border-l border-slate-200 pl-4">
-              <div className="flex items-center gap-2 text-slate-500">
-                <GraduationCap size={14} className="text-indigo-500" />
-                <span className="text-[11px] font-bold uppercase tracking-tight">{studentData.degree || "B.Tech CSE"}</span>
-              </div>
-              <div className="text-[9px] font-black text-slate-300 uppercase tracking-widest">
-                Year: {studentData.year || "3rd Year"}
-              </div>
+            <div className="flex items-center gap-3 bg-white p-3 rounded-2xl border border-slate-100">
+                <div className="p-2 bg-emerald-50 rounded-lg text-emerald-600"><Phone size={16}/></div>
+                <div className="flex flex-col"><span className="text-[8px] font-black text-slate-300 uppercase">Phone</span><span className="text-xs font-bold text-slate-600">{studentData.phone || "N/A"}</span></div>
+            </div>
+            <div className="flex items-center gap-3 bg-white p-3 rounded-2xl border border-slate-100">
+                <div className="p-2 bg-indigo-50 rounded-lg text-indigo-600"><GraduationCap size={16}/></div>
+                <div className="flex flex-col"><span className="text-[8px] font-black text-slate-300 uppercase">Course</span><span className="text-xs font-bold text-slate-600">{studentData.degree}</span></div>
             </div>
           </div>
         </div>
 
-        {/* 2. HISTORY SECTION */}
-        <div className="flex-1 overflow-y-auto p-8 pt-6">
-          <div className="flex items-center justify-between mb-8">
+        {/* TABLE SECTION */}
+        <div className="flex-1 overflow-y-auto p-8">
+          <div className="flex items-center justify-between mb-6">
             <div className="flex items-center gap-2">
-              <div className="bg-[#001D4C] p-1.5 rounded-lg">
-                <History size={14} className="text-white" />
-              </div>
-              <h3 className="text-[11px] font-black text-[#001D4C] uppercase tracking-[0.2em]">
-                Complaint Activity
-              </h3>
+              <History size={16} className="text-[#001D4C]" />
+              <h3 className="text-[11px] font-black text-[#001D4C] uppercase tracking-[0.2em]">Log History</h3>
             </div>
-            
-            {/* Complaint Counter Badge */}
-            <div className="flex items-center gap-2 bg-slate-50 px-3 py-1.5 rounded-full border border-slate-100">
-              <span className="text-[10px] font-black text-[#001D4C]">{totalComplaints}</span>
-              <span className="text-[8px] font-bold text-slate-400 uppercase tracking-widest">Total Logs</span>
+            <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                Showing {totalComplaints} Records
             </div>
           </div>
 
-          <div className="space-y-3">
-            {studentData.history && studentData.history.length > 0 ? (
-              studentData.history.map((entry, idx) => (
-                <div 
-                  key={idx} 
-                  className="group flex flex-col p-4 rounded-[1.5rem] border border-slate-100 hover:border-blue-100 hover:bg-blue-50/30 transition-all"
-                >
-                  <div className="flex justify-between items-start mb-2">
-                    <div>
-                      <p className="text-xs font-black text-[#001D4C] uppercase tracking-tight">
-                        {entry.title}
-                      </p>
-                      <span className="text-[9px] font-bold text-blue-400 uppercase tracking-tighter bg-blue-50 px-1.5 py-0.5 rounded">
-                        {entry.category}
-                      </span>
-                    </div>
-                    
-                    <div className={`flex items-center gap-1.5 px-2 py-1 rounded-md border ${
-                      entry.status === 'Resolved' 
-                        ? 'bg-emerald-50 text-emerald-600 border-emerald-100' 
-                        : 'bg-amber-50 text-amber-600 border-amber-100'
-                    }`}>
-                      {entry.status === 'Resolved' ? <CheckCircle2 size={10} /> : <Clock size={10} />}
-                      <span className="text-[8px] font-black uppercase tracking-widest">
-                        {entry.status}
-                      </span>
-                    </div>
-                  </div>
-
-                  <div className="flex justify-between items-center mt-2 pt-2 border-t border-slate-50/50">
-                    <div className="flex items-center gap-3">
-                      <div className="flex flex-col">
-                        <span className="text-[7px] font-black text-slate-300 uppercase tracking-widest">Raised</span>
-                        <span className="text-[9px] font-bold text-slate-500">
-                          {new Date(entry.createdAt || entry.date).toLocaleDateString('en-GB')}
-                        </span>
-                      </div>
-                      {entry.status === 'Resolved' && (
-                        <div className="flex flex-col border-l border-slate-100 pl-3">
-                          <span className="text-[7px] font-black text-emerald-300 uppercase tracking-widest">Resolved</span>
-                          <span className="text-[9px] font-bold text-emerald-600">
-                            {entry.timeline?.resolvedAt ? new Date(entry.timeline.resolvedAt).toLocaleDateString('en-GB') : "Recently"}
+          <div className="rounded-2xl border border-slate-100 overflow-hidden">
+            <table className="w-full text-left border-collapse">
+              <thead>
+                <tr className="bg-slate-50 border-b border-slate-100">
+                  <th className="px-6 py-4 text-[9px] font-black text-slate-400 uppercase tracking-widest">Date Raised</th>
+                  <th className="px-6 py-4 text-[9px] font-black text-slate-400 uppercase tracking-widest">Title & Category</th>
+                  <th className="px-6 py-4 text-[9px] font-black text-slate-400 uppercase tracking-widest text-center">Status</th>
+                  <th className="px-6 py-4 text-[9px] font-black text-slate-400 uppercase tracking-widest">Duration</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-50">
+                {studentData.history && studentData.history.length > 0 ? (
+                  studentData.history.map((entry, idx) => (
+                    <tr key={idx} className="hover:bg-slate-50/50 transition-colors group">
+                      <td className="px-6 py-4">
+                        <div className="flex flex-col">
+                          <span className="text-xs font-bold text-slate-600">
+                            {new Date(entry.createdAt || entry.date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}
+                          </span>
+                          <span className="text-[9px] font-medium text-slate-400">
+                            {new Date(entry.createdAt || entry.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                           </span>
                         </div>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              ))
-            ) : (
-              <div className="text-center py-12">
-                <div className="bg-slate-50 w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-3">
-                  <History size={20} className="text-slate-200" />
-                </div>
-                <p className="text-[10px] font-bold text-slate-300 uppercase tracking-[0.2em]">No past complaints found</p>
-              </div>
-            )}
+                      </td>
+                      <td className="px-6 py-4">
+                        <div className="flex flex-col">
+                          <span className="text-xs font-black text-[#001D4C] uppercase tracking-tight group-hover:text-blue-600 transition-colors">
+                            {entry.title}
+                          </span>
+                          <span className="text-[9px] font-bold text-blue-400 uppercase tracking-tighter">
+                            {entry.category}
+                          </span>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 text-center">
+                        <div className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full border ${
+                          entry.status === 'Resolved' 
+                            ? 'bg-emerald-50 text-emerald-600 border-emerald-100' 
+                            : 'bg-amber-50 text-amber-600 border-amber-100'
+                        }`}>
+                          {entry.status === 'Resolved' ? <CheckCircle2 size={10} /> : <Clock size={10} />}
+                          <span className="text-[8px] font-black uppercase tracking-widest">{entry.status}</span>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4">
+                        <div className="flex flex-col">
+                          <span className="text-xs font-bold text-slate-500">
+                            {entry.status === 'Resolved' 
+                                ? getDaysToResolve(entry.createdAt, entry.timeline?.resolvedAt) 
+                                : "Active"}
+                          </span>
+                          <span className="text-[8px] font-black text-slate-300 uppercase tracking-widest">To Finish</span>
+                        </div>
+                      </td>
+                    </tr>
+                  ))
+                ) : (
+                  <tr>
+                    <td colSpan="4" className="px-6 py-20 text-center">
+                       <History size={30} className="mx-auto mb-3 text-slate-200" />
+                       <p className="text-[10px] font-bold text-slate-300 uppercase tracking-widest">No Logs Available</p>
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
           </div>
         </div>
 
-        {/* 3. FOOTER */}
-        <div className="p-6 bg-white border-t border-slate-50 flex justify-center">
-          <button 
-            onClick={onClose}
-            className="group flex items-center gap-2 text-[10px] font-black text-slate-300 uppercase tracking-[0.4em] hover:text-[#001D4C] transition-all"
-          >
-            Close Profile <X size={12} className="group-hover:rotate-90 transition-transform" />
+        <div className="p-6 bg-slate-50/50 border-t border-slate-100 flex justify-center">
+          <button onClick={onClose} className="group flex items-center gap-2 text-[10px] font-black text-slate-400 uppercase tracking-[0.4em] hover:text-[#001D4C] transition-all">
+            Close History <X size={12} className="group-hover:rotate-90 transition-transform" />
           </button>
         </div>
       </div>

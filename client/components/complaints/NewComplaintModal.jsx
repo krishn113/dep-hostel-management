@@ -144,7 +144,7 @@ const handleSubmit = async (e) => {
 
           {/* 5. Detailed Description */}
           <div className="space-y-2">
-            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Details (Optional)</label>
+            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Details </label>
             <textarea 
               rows="3"
               placeholder="Describe the problem in detail..."

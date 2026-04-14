@@ -64,7 +64,8 @@ const complaintSchema = new mongoose.Schema({
     raisedAt: { type: Date, default: Date.now },
     slotsRequestedAt: { type: Date },
     scheduledAt: { type: Date },
-    resolvedAt: { type: Date }
+    resolvedAt: { type: Date },
+    lastRemindedAt: { type: Date }
   },
 
   // INTERNAL UPDATES LOG

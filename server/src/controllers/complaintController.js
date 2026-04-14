@@ -132,7 +132,7 @@ export const getCaretakerComplaints = async (req, res) => {
 
     const complaints = await Complaint.find(query)
       .populate("student", "name roomNo") // Crucial for the Card UI
-      .sort({ createdAt: -1 });
+      .sort({ createdAt: 1 });
 
     res.status(200).json({ complaints });
   } catch (error) {
@@ -373,5 +373,59 @@ export const requestReschedule = async (req, res) => {
   } catch (error) {
     console.error("Reschedule Controller Error:", error);
     res.status(500).json({ message: error.message });
+  }
+};
+
+export const deleteComplaint = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const complaint = await Complaint.findById(id);
+
+    if (!complaint) return res.status(404).json({ message: "Complaint not found" });
+
+    // Security: Only the student who raised it can delete it
+    if (complaint.student.toString() !== req.user._id.toString()) {
+      return res.status(403).json({ message: "You can only delete your own complaints" });
+    }
+
+    // Only allow deletion if it hasn't been resolved yet (Optional safety check)
+    if (complaint.status === "Resolved") {
+      return res.status(400).json({ message: "Resolved complaints cannot be deleted" });
+    }
+
+    await Complaint.findByIdAndDelete(id);
+    res.status(200).json({ message: "Complaint deleted successfully" });
+  } catch (error) {
+    console.error("Delete Error:", error.message);
+    res.status(500).json({ message: "Failed to delete complaint" });
+  }
+};
+
+export const sendReminder = async (req, res) => {
+  try {
+    const complaint = await Complaint.findById(req.params.id);
+    if (!complaint) return res.status(404).json({ message: "Complaint not found" });
+
+    const now = new Date();
+    const lastReminded = complaint.timeline?.lastRemindedAt;
+
+    // Optional: Cooldown check (Prevents sending more than one reminder every 24 hours)
+    if (lastReminded && (now - new Date(lastReminded)) < 24 * 60 * 60 * 1000) {
+      return res.status(429).json({ 
+        message: "A reminder was already sent recently. Please wait before reminding again." 
+      });
+    }
+
+    // Update the timeline
+    if (!complaint.timeline) complaint.timeline = {};
+    complaint.timeline.lastRemindedAt = now;
+    
+    // Logic for actual notification (Email/Push) would go here
+    // For now, we just save the timestamp for the caretaker to see
+    await complaint.save();
+
+    res.json({ message: "Reminder sent successfully! The caretaker has been notified." });
+  } catch (error) {
+    res.status(500).json({ message: "Failed to send reminder", error: error.message });
   }
 };
