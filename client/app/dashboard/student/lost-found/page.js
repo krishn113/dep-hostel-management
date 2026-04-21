@@ -309,7 +309,7 @@ export default function LostFoundPage() {
           <div className="flex bg-slate-100 p-1 rounded-2xl gap-1 w-full sm:w-auto overflow-x-auto no-scrollbar">
             <button
               onClick={() => setActiveTab("lost")}
-              className={`flex items-center justify-center min-w-[90px] sm:min-w-0 gap-1.5 sm:gap-2 px-3 sm:px-6 py-2.5 sm:py-3 rounded-xl font-black text-[10px] sm:text-xs uppercase tracking-widest transition-all ${
+              className={`flex-1 sm:flex-none flex items-center justify-center min-w-[90px] sm:min-w-0 gap-1.5 sm:gap-2 px-3 sm:px-6 py-2.5 sm:py-3 rounded-xl font-black text-[10px] sm:text-xs uppercase tracking-widest transition-all ${
                 activeTab === "lost"
                   ? "bg-white text-rose-500 shadow-sm"
                   : "text-slate-400 hover:text-slate-600"
@@ -327,7 +327,7 @@ export default function LostFoundPage() {
             </button>
             <button
               onClick={() => setActiveTab("found")}
-              className={`flex items-center justify-center min-w-[90px] sm:min-w-0 gap-1.5 sm:gap-2 px-3 sm:px-6 py-2.5 sm:py-3 rounded-xl font-black text-[10px] sm:text-xs uppercase tracking-widest transition-all ${
+              className={`flex-1 sm:flex-none flex items-center justify-center min-w-[90px] sm:min-w-0 gap-1.5 sm:gap-2 px-3 sm:px-6 py-2.5 sm:py-3 rounded-xl font-black text-[10px] sm:text-xs uppercase tracking-widest transition-all ${
                 activeTab === "found"
                   ? "bg-white text-emerald-500 shadow-sm"
                   : "text-slate-400 hover:text-slate-600"
@@ -347,7 +347,7 @@ export default function LostFoundPage() {
             </button>
             <button
               onClick={() => setActiveTab("mine")}
-              className={`flex items-center justify-center min-w-[90px] sm:min-w-0 gap-1.5 sm:gap-2 px-3 sm:px-6 py-2.5 sm:py-3 rounded-xl font-black text-[10px] sm:text-xs uppercase tracking-widest transition-all ${
+              className={`flex-1 sm:flex-none flex items-center justify-center min-w-[90px] sm:min-w-0 gap-1.5 sm:gap-2 px-3 sm:px-6 py-2.5 sm:py-3 rounded-xl font-black text-[10px] sm:text-xs uppercase tracking-widest transition-all ${
                 activeTab === "mine"
                   ? "bg-indigo-600 text-white shadow-sm"
                   : "text-slate-400 hover:text-slate-600"
@@ -370,7 +370,7 @@ export default function LostFoundPage() {
           {/* Right: My Posts filter + Search + Date Filter */}
           <div className="flex flex-col sm:flex-row items-center gap-3 w-full sm:w-auto">
             {/* Date Filter */}
-            <div className={`flex items-center gap-2 bg-slate-100 px-4 py-2 rounded-2xl border-2 transition-all duration-300 ${dateFilter ? 'border-indigo-400 bg-white shadow-sm' : 'border-transparent'}`}>
+            <div className={`flex items-center justify-between sm:justify-start w-full sm:w-auto gap-2 bg-slate-100 px-4 py-2 rounded-2xl border-2 transition-all duration-300 ${dateFilter ? 'border-indigo-400 bg-white shadow-sm' : 'border-transparent'}`}>
                <span className="text-[9px] font-black uppercase text-slate-400 tracking-widest leading-none">After:</span>
                <input 
                  type="date"
@@ -456,17 +456,17 @@ export default function LostFoundPage() {
                   </div>
 
                   {/* Actions */}
-                  <div className="flex items-center gap-2 sm:gap-3 shrink-0 ml-[52px] sm:ml-0">
+                  <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3 shrink-0 w-full sm:w-auto mt-2 sm:mt-0">
                     <button
                       onClick={() => setExpandedId(expandedId === p._id ? null : p._id)}
-                      className="text-indigo-600 hover:text-white text-[10px] font-black uppercase tracking-widest px-6 py-3 rounded-2xl border border-indigo-100 hover:bg-indigo-600 hover:shadow-lg hover:shadow-indigo-100 transition-all duration-300"
+                      className="flex-1 flex justify-center items-center text-indigo-600 hover:text-white text-[10px] font-black uppercase tracking-widest px-6 py-3 rounded-2xl border border-indigo-100 hover:bg-indigo-600 hover:shadow-lg hover:shadow-indigo-100 transition-all duration-300"
                     >
                       {expandedId === p._id ? "Hide" : "Details"}
                     </button>
                     {p.postedBy?._id === currentUserId && (
                       <button
                         onClick={() => markResolved(p._id)}
-                        className="bg-slate-50 hover:bg-emerald-500 text-slate-400 hover:text-white border border-slate-100 hover:border-emerald-500 px-6 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all duration-300 hover:shadow-lg hover:shadow-emerald-100"
+                        className="flex-1 flex justify-center items-center bg-slate-50 hover:bg-emerald-500 text-slate-400 hover:text-white border border-slate-100 hover:border-emerald-500 px-6 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all duration-300 hover:shadow-lg hover:shadow-emerald-100"
                       >
                         Resolve
                       </button>

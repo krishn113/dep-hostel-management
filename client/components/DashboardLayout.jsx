@@ -184,7 +184,7 @@ export default function DashboardLayout({ children, role }) {
       <div className="flex-1 md:ml-64 min-w-0">
 
         {/* HEADER */}
-        <header className={`h-16 md:h-20 backdrop-blur-md border-b sticky top-0 z-10 px-4 md:px-8 flex justify-between items-center gap-4 ${headerStyles}`}>
+        <header className={`h-16 md:h-20 backdrop-blur-md border-b sticky top-0 z-30 px-4 md:px-8 flex justify-between items-center gap-4 ${headerStyles}`}>
 
           {/* Left: burger (mobile) + hostel name */}
           <div className="flex items-center gap-3 min-w-0">
