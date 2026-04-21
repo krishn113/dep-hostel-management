@@ -12,7 +12,9 @@ dotenv.config();
 // In production, these should be in .env
 // We'll trust the user has put EMAIL_USER and EMAIL_PASS in .env or will do so.
 const transporter = nodemailer.createTransport({
-  service: "gmail",
+  host: "smtp.gmail.com",
+  port: 465,
+  secure: true, // MUST be true
   auth: {
     user: process.env.EMAIL_USER,
     pass: process.env.EMAIL_PASS,
