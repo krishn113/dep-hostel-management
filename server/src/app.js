@@ -28,7 +28,7 @@ app.use((req, res, next) => {
 });
 
 app.use(cors({
-  origin: "http://localhost:3000",
+  origin: "https://dep-hostel-management-1.onrender.com",
   credentials: true
 }));
 
