@@ -59,7 +59,8 @@ export default function StudentForms() {
   const fetchMyForms = async () => {
     try {
       const token = localStorage.getItem("token");
-      const res = await fetch("http://localhost:5000/api/student/forms", {
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";
+      const res = await fetch(`${apiUrl}/student/forms`, {
         headers: { "Authorization": `Bearer ${token}` }
       });
       const data = await res.json();
@@ -80,7 +81,8 @@ export default function StudentForms() {
   const submitLeaveForm = async (e) => {
     e.preventDefault();
     const token = localStorage.getItem("token");
-    const res = await fetch("http://localhost:5000/api/student/hostel-leaving/apply", {
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";
+    const res = await fetch(`${apiUrl}/student/hostel-leaving/apply`, {
       method: "POST",
       headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
       body: JSON.stringify(leaveForm)
@@ -99,7 +101,8 @@ export default function StudentForms() {
   const submitGuestForm = async (e) => {
     e.preventDefault();
     const token = localStorage.getItem("token");
-    const res = await fetch("http://localhost:5000/api/student/guesthouse/book", {
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";
+    const res = await fetch(`${apiUrl}/student/guesthouse/book`, {
       method: "POST",
       headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
       body: JSON.stringify(guestForm)

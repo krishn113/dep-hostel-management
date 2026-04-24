@@ -16,8 +16,9 @@ export default function WardenForms() {
     try {
       setLoading(true);
       const token = localStorage.getItem("token");
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";
       
-      const guessRes = await fetch("http://localhost:5000/api/warden/forms/guesthouse", {
+      const guessRes = await fetch(`${apiUrl}/warden/forms/guesthouse`, {
         headers: { "Authorization": `Bearer ${token}` }
       });
 
