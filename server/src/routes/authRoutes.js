@@ -30,4 +30,26 @@ router.get("/google/callback",
   }
 );
 
+// routes/auth.js (or similar)
+router.post("/save-subscription", async (req, res) => {
+  const { subscription } = req.body;
+  const userId = req.user.id; // Assuming you have auth middleware
+
+  try {
+    const user = await User.findById(userId);
+    
+    // Avoid duplicate subscriptions for the same endpoint
+    const exists = user.pushSubscriptions.find(sub => sub.endpoint === subscription.endpoint);
+    
+    if (!exists) {
+      user.pushSubscriptions.push(subscription);
+      await user.save();
+    }
+    
+    res.status(200).json({ msg: "Subscription saved successfully" });
+  } catch (err) {
+    res.status(500).json({ msg: "Server error" });
+  }
+});
+
 export default router;

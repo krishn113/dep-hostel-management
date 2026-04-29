@@ -133,38 +133,38 @@ export default function LostFoundPage() {
 };
 
   const filteredPosts = posts
-    .filter((p) =>{
-    // New Logic: If activeTab is 'archived', show only resolved
-    if (activeTab === "archived") return p.status === "resolved";
-    
-    // Otherwise, show only active posts for other tabs
-    if (activeTab === "mine") return p.postedBy?._id === currentUserId && p.status !== "resolved";
-    return p.type === activeTab && p.status !== "resolved";
+  .filter((p) => {
+    // 1. Tab Filter
+    if (activeTab === "mine") return p.postedBy?._id === currentUserId;
+    return p.type === activeTab;
   })
-    .filter((p) => {
-      if (activeTab === "mine") return p.postedBy?._id === currentUserId;
-      return p.type === activeTab;
-    })
-    .filter((p) =>
-      searchQuery
-        ? p.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          p.description?.toLowerCase().includes(searchQuery.toLowerCase())
-        : true
-    )
-    .filter((p) => {
-      if (!dateFilter) return true;
-      const postDate = new Date(p.createdAt);
-      const filterDate = new Date(dateFilter);
-      // We want items posted ON or AFTER the selected date
-      // Reset hours to compare only the dates
-      postDate.setHours(0, 0, 0, 0);
-      filterDate.setHours(0, 0, 0, 0);
-      return postDate >= filterDate;
-    });
+  .filter((p) => {
+    // 2. Search Filter
+    const matchesSearch = searchQuery
+      ? p.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        p.description?.toLowerCase().includes(searchQuery.toLowerCase())
+      : true;
 
-  const lostCount = posts.filter((p) => p.type === "lost" && p.status !== "resolved").length;
-  const foundCount = posts.filter((p) => p.type === "found" && p.status !== "resolved").length;
-  const myPostsCount = posts.filter((p) => p.postedBy?._id === currentUserId && p.status !== "resolved").length;
+    // 3. Date Filter (Check if post is AFTER the selected date)
+    const matchesDate = dateFilter 
+      ? new Date(p.createdAt) >= new Date(dateFilter) 
+      : true;
+
+    return matchesSearch && matchesDate;
+  })
+  .sort((a, b) => {
+    // 4. Status Sort: Resolved items go to the bottom
+    if (a.status === "resolved" && b.status !== "resolved") return 1;
+    if (a.status !== "resolved" && b.status === "resolved") return -1;
+    
+    // Secondary sort: Newest first
+    return new Date(b.createdAt) - new Date(a.createdAt);
+  });
+
+// Remove the "&& p.status !== 'resolved'" from these lines
+const lostCount = posts.filter((p) => p.type === "lost").length;
+const foundCount = posts.filter((p) => p.type === "found").length;
+const myPostsCount = posts.filter((p) => p.postedBy?._id === currentUserId).length;
 
   if (!user) return <div className="p-10 text-center text-indigo-600 font-bold animate-pulse">Loading...</div>;
   if (!user.roomNumber) return null;
@@ -380,21 +380,7 @@ export default function LostFoundPage() {
                 {myPostsCount}
               </span>
             </button>
-            {/* Add this button after the "My Posts" button */}
-<button
-  onClick={() => setActiveTab("archived")}
-  className={`flex-1 sm:flex-none flex items-center justify-center min-w-[90px] gap-2 px-6 py-3 rounded-xl font-black text-[10px] sm:text-xs uppercase tracking-widest transition-all ${
-    activeTab === "archived"
-      ? "bg-slate-800 text-white shadow-sm"
-      : "text-slate-400 hover:text-slate-600"
-  }`}
->
-  <Clock size={14} />
-  Archive
-  <span className="ml-1 px-2 py-0.5 rounded-full text-[10px] bg-slate-200 text-slate-500">
-    {posts.filter(p => p.status === "resolved").length}
-  </span>
-</button>
+  
           </div>
 
           {/* Right: My Posts filter + Search + Date Filter */}
@@ -440,11 +426,17 @@ export default function LostFoundPage() {
           ) : (
             filteredPosts.map((p) => (
               <div
-                key={p._id}
-                className={`bg-white rounded-[2.5rem] border shadow-sm relative overflow-hidden transition-all hover:shadow-md ${
-                  p.type === "lost" ? "border-rose-50" : "border-emerald-50"
-                }`}
-              >
+    key={p._id}
+    className={`bg-white rounded-[2.5rem] border shadow-sm relative overflow-hidden transition-all hover:shadow-md 
+      ${p.status === "resolved" ? "opacity-60 grayscale-[0.5]" : ""} 
+      ${p.type === "lost" ? "border-rose-50" : "border-emerald-50"}`}
+  >
+    {/* If resolved, add a small "Resolved" badge */}
+    {p.status === "resolved" && (
+      <div className="absolute top-4 right-4 bg-slate-100 text-slate-500 text-[9px] font-black uppercase tracking-widest px-3 py-1 rounded-full z-20">
+        Resolved
+      </div>
+    )}
                 {/* Color accent strip */}
                 <div
                   className={`absolute left-0 top-0 bottom-0 w-1.5 ${
@@ -493,14 +485,14 @@ export default function LostFoundPage() {
                     >
                       {expandedId === p._id ? "Hide" : "Details"}
                     </button>
-                    {p.postedBy?._id === currentUserId && (
-                      <button
-                        onClick={() => markResolved(p._id)}
-                        className="flex-1 flex justify-center items-center bg-slate-50 hover:bg-emerald-500 text-slate-400 hover:text-white border border-slate-100 hover:border-emerald-500 px-6 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all duration-300 hover:shadow-lg hover:shadow-emerald-100"
-                      >
-                        Resolve
-                      </button>
-                    )}
+                    {p.postedBy?._id === currentUserId && p.status !== "resolved" && (
+       <button
+         onClick={() => markResolved(p._id)}
+        className="flex-1 bg-emerald-50 text-emerald-600 hover:bg-emerald-500 hover:text-white text-[10px] font-black uppercase tracking-widest px-6 py-3 rounded-2xl border border-emerald-100 transition-all duration-300"
+  >
+         Resolve
+       </button>
+    )}
                   </div>
                 </div>
 

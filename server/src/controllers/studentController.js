@@ -118,7 +118,6 @@ export const getPosts = async (req, res) => {
   try {
 
     const posts = await LostFound.find({
-      status: "active",
       $or: [
         { visibility: "global" },
         { visibility: "hostel", hostelId: req.user.hostelId }

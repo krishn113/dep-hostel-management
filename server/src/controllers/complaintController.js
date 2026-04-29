@@ -1,6 +1,7 @@
 import Complaint from "../models/Complaint.js";
 import YearAllocation from "../models/YearAllocation.js";
 import User from "../models/User.js"
+import { sendNotification } from "../utils/sendNotification.js";
 
 
 export const createComplaint = async (req, res) => {
@@ -46,6 +47,31 @@ export const createComplaint = async (req, res) => {
     });
 
     await newComplaint.save();
+
+    try {
+      // Find caretakers assigned to this specific hostel
+      const caretakers = await User.find({ 
+        hostelId: hostelId, 
+        role: 'caretaker' 
+      });
+
+      if (caretakers.length > 0) {
+        const payload = {
+          title: isUrgent ? "🚨 URGENT Complaint Raised" : "⚠️ New Complaint Raised",
+          body: `${req.user.name}: ${title}`,
+          url: "/dashboard/caretaker/complaints"
+        };
+
+        // Send to all registered caretakers of this hostel
+        await Promise.all(
+          caretakers.map(caretaker => sendNotification(caretaker, payload))
+        );
+      }
+    } catch (notifyError) {
+      // Log notification errors but don't fail the request
+      console.error("Push Notification Error (Caretaker):", notifyError);
+    }
+    
     res.status(201).json({ message: "Complaint raised successfully", complaint: newComplaint });
 
   } catch (error) {

@@ -27,7 +27,16 @@ const userSchema = new mongoose.Schema({
   hostelId: { type: mongoose.Schema.Types.ObjectId, ref: "Hostel" },
   tokenVersion: { type: Number, default: 0 },
   roomNumber: String,
-  floorNumber: String
+  floorNumber: String,
+  pushSubscriptions: [
+    {
+      endpoint: { type: String, required: true },
+      keys: {
+        p256dh: { type: String, required: true },
+        auth: { type: String, required: true }
+      }
+    }
+  ]
 }, { timestamps: true });
 
-export default mongoose.model("User", userSchema);
+export default mongoose.models.User || mongoose.model("User", userSchema);

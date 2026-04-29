@@ -141,12 +141,25 @@ export default function StudentDashboard() {
               <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Management System</p>
             </div>
             <button
-              onClick={logout}
-              className="flex items-center gap-2 text-rose-500 hover:text-rose-600 bg-rose-50 hover:bg-rose-100 px-4 py-2 rounded-xl transition-colors font-bold text-sm shadow-sm"
-            >
-              <LogOut size={16} />
-              <span className="hidden sm:inline">Logout</span>
-            </button>
+  onClick={() => {
+    if (confirmLogout) {
+      logout();
+    } else {
+      setConfirmLogout(true);
+      setTimeout(() => setConfirmLogout(false), 3000);
+    }
+  }}
+  className={`flex items-center gap-2 px-4 py-2 rounded-xl transition-all font-bold text-sm shadow-sm 
+    ${confirmLogout 
+      ? "bg-rose-600 text-white hover:bg-rose-700" 
+      : "text-rose-500 hover:text-rose-600 bg-rose-50 hover:bg-rose-100"
+    }`}
+>
+  <LogOut size={16} />
+  <span className="hidden sm:inline">
+    {confirmLogout ? "Confirm?" : "Logout"}
+  </span>
+</button>
           </header>
   
           <motion.div

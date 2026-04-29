@@ -1,5 +1,5 @@
 "use client";
-import { Clock, Bell, ThumbsUp, AlertCircle, ChevronRight, Trash2, CheckCircle } from "lucide-react";
+import { Clock, Bell, ThumbsUp, AlertCircle, ChevronRight, XCircle, CheckCircle } from "lucide-react";
 import api from "@/lib/api";
 import { useState, useEffect, useMemo } from "react";
 
@@ -56,67 +56,62 @@ export default function ComplaintCard({ complaint, activeTab, onClick, currentUs
     }
   };
 
-  const handleDelete = async (e) => {
-  e.stopPropagation();
-  if (!window.confirm("Are you sure you want to delete this complaint?")) return;
+  const handleCancel = async (e) => {
+    e.stopPropagation();
+    if (!window.confirm("Are you sure you want to cancel this complaint?")) return;
 
-  try {
-    setIsProcessing(true);
-    // Use backticks for the template literal
-    const res = await api.delete(`/complaints/${complaint._id}`);
-    
-    if (res.status === 200 || res.status === 204) {
-      alert("Deleted successfully");
-      if (onUpdate) onUpdate();
+    try {
+      setIsProcessing(true);
+      // Backend route remains the same, but UI logic reflects 'Cancel'
+      const res = await api.delete(`/complaints/${complaint._id}`);
+      
+      if (res.status === 200 || res.status === 204) {
+        alert("Cancelled successfully");
+        if (onUpdate) onUpdate();
+      }
+    } catch (err) {
+      console.error("Cancel Error details:", err.response);
+      alert(err.response?.data?.message || "Server rejected the cancel request");
+    } finally {
+      setIsProcessing(false);
     }
-  } catch (err) {
-    console.error("Delete Error details:", err.response);
-    // This will tell you if it's a 401 (Auth), 404 (Path), or 500 (Server)
-    alert(err.response?.data?.message || "Server rejected the delete request");
-  } finally {
-    setIsProcessing(false);
-  }
-};
+  };
 
- const handleResolve = async (e) => {
-  if (e) e.stopPropagation();
-  if (!window.confirm("Mark as resolved?")) return;
+  const handleResolve = async (e) => {
+    if (e) e.stopPropagation();
+    if (!window.confirm("Mark as resolved?")) return;
 
-  try {
-    setIsProcessing(true);
-    const res = await api.patch(`/complaints/${complaint._id}/manage`, { 
-      action: "Resolve" 
-    });
-    
-    alert(res.data.message);
-    if (onUpdate) onUpdate();
-  } catch (err) {
-    // Log this to see the "details" we added in the backend fix above
-    console.log("Error Data:", err.response?.data);
-    alert(err.response?.data?.details || "Update failed on server");
-  } finally {
-    setIsProcessing(false);
-  }
-};
+    try {
+      setIsProcessing(true);
+      const res = await api.patch(`/complaints/${complaint._id}/manage`, { 
+        action: "Resolve" 
+      });
+      
+      alert(res.data.message);
+      if (onUpdate) onUpdate();
+    } catch (err) {
+      console.log("Error Data:", err.response?.data);
+      alert(err.response?.data?.details || "Update failed on server");
+    } finally {
+      setIsProcessing(false);
+    }
+  };
 
-const handleReminder = async (e) => {
-  e.stopPropagation();
-  if (isProcessing) return;
+  const handleReminder = async (e) => {
+    e.stopPropagation();
+    if (isProcessing) return;
 
-  try {
-    setIsProcessing(true);
-    const res = await api.post(`/complaints/${complaint._id}/remind`);
-    
-    // Success feedback
-    alert(res.data.message);
-  } catch (err) {
-    // Handling the 429 Cooldown error or other issues
-    const errorMsg = err.response?.data?.message || "Could not send reminder";
-    alert(errorMsg);
-  } finally {
-    setIsProcessing(false);
-  }
-};
+    try {
+      setIsProcessing(true);
+      const res = await api.post(`/complaints/${complaint._id}/remind`);
+      alert(res.data.message);
+    } catch (err) {
+      const errorMsg = err.response?.data?.message || "Could not send reminder";
+      alert(errorMsg);
+    } finally {
+      setIsProcessing(false);
+    }
+  };
 
   const getStatusStyles = (status) => {
     switch (status) {
@@ -167,25 +162,25 @@ const handleReminder = async (e) => {
             </button>
           ) : (
             <div className="flex gap-1">
-               {!isResolved && (
+                {!isResolved && (
                 <button 
-                  onClick={handleDelete}
+                  onClick={handleCancel}
                   className="p-2 rounded-lg border border-rose-100 bg-rose-50 text-rose-400 hover:bg-rose-100 transition-colors"
-                  title="Delete"
+                  title="Cancel Complaint"
                 >
-                  <Trash2 size={14} />
+                  <XCircle size={14} />
                 </button>
               )}
               <button 
-  onClick={handleReminder}
-  disabled={isProcessing}
-  className={`p-2 rounded-lg border border-slate-100 bg-slate-50 transition-colors ${
-    isProcessing ? 'opacity-50' : 'text-slate-400 hover:text-blue-600 hover:border-blue-200'
-  }`}
-  title="Send Reminder"
->
-  <Bell size={14} className={isProcessing ? "animate-bounce" : ""} />
-</button>
+                onClick={handleReminder}
+                disabled={isProcessing}
+                className={`p-2 rounded-lg border border-slate-100 bg-slate-50 transition-colors ${
+                  isProcessing ? 'opacity-50' : 'text-slate-400 hover:text-blue-600 hover:border-blue-200'
+                }`}
+                title="Send Reminder"
+              >
+                <Bell size={14} className={isProcessing ? "animate-bounce" : ""} />
+              </button>
             </div>
           )}
         </div>
@@ -209,7 +204,6 @@ const handleReminder = async (e) => {
         </span>
         
         <div className="flex items-center gap-2">
-          {/* Quick Resolve Action - Only shows on hover if status is Scheduled */}
           {canBeResolved && (
             <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity mr-2">
               <button 

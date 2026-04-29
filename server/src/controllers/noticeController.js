@@ -1,5 +1,7 @@
 import Notice from "../models/Notice.js";
 import { processAndSaveFile } from "../utils/localUpload.js";
+import { sendNotification } from "../utils/sendNotification.js"; 
+import User from "../models/user.js";
 
 export const createNotice = async (req, res) => {
     try {
@@ -43,6 +45,34 @@ export const createNotice = async (req, res) => {
         });
 
         await newNotice.save();
+        // Only send if the notice is associated with a hostel
+        if (newNotice.hostel) {
+            try {
+                // 1. Find all students in this hostel
+                const students = await User.find({ 
+                    hostelId: newNotice.hostel, 
+                    role: 'student' 
+                });
+
+                // 2. Define the message payload
+                const payload = {
+                    title: `📢 New ${newNotice.category} Notice`,
+                    body: newNotice.title,
+                    url: "/dashboard/student/notices"
+                };
+
+                // 3. Send to each student's devices
+                // We use Promise.all to handle multiple students concurrently
+                await Promise.all(
+                    students.map(student => sendNotification(student, payload))
+                );
+            } catch (notifyError) {
+                // We log the error but don't stop the request 
+                // because the notice itself was successfully created
+                console.error("Push Notification Error:", notifyError);
+            }
+        }
+        
         res.status(201).json({ msg: "Notice posted successfully", notice: newNotice });
     } catch (error) {
         console.error("Notice Creation Error:", error);
