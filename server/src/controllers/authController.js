@@ -5,6 +5,7 @@ import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import nodemailer from "nodemailer";
 import dotenv from "dotenv";
+import { generateToken } from "../utils/generateToken.js";
 
 dotenv.config();
 
@@ -127,14 +128,8 @@ export const signup = async (req, res) => {
 
     await Otp.deleteOne({ email });
 
-    const token = jwt.sign(
-      { id: user._id, role: user.role, tv: user.tokenVersion },
-      process.env.JWT_SECRET,
-      { expiresIn: "7d" }
-    );
-
-
-    res.json({ msg: "Signup successful", token, role: user.role });
+    const token = generateToken(user);
+res.json({ msg: "Signup successful", token, role: user.role });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -152,17 +147,8 @@ export const login = async (req, res) => {
     const ok = await bcrypt.compare(password, user.password);
     if (!ok) return res.status(400).json({ msg: "Invalid credentials" });
 
-    const token = jwt.sign(
-      { 
-        id: user._id, 
-        role: user.role, 
-        tv: Number(user.tokenVersion) || 0 
-      },
-      process.env.JWT_SECRET,
-      { expiresIn: "7d" }
-    );
-
-    res.json({ token, role: user.role, name: user.name });
+    const token = generateToken(user);
+res.json({ token, role: user.role, name: user.name });
   } catch (err) {
     console.error("Login Error:", err.message);
     res.status(500).json({ error: "Internal Server Error" });

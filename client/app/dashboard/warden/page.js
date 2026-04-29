@@ -30,17 +30,31 @@ export default function WardenOverview() {
           const complaintsList = Array.isArray(complaintsRes.data.complaints) 
             ? complaintsRes.data.complaints 
             : [];
-          
+
+          const now = new Date();
+          const thirtyDaysAgo = new Date();
+          thirtyDaysAgo.setDate(now.getDate() - 30);
+
           let active = 0;
           let resolved = 0;
           
           complaintsList.forEach(c => {
-             if (c.status === "Resolved" || c.status === "Rejected") resolved++;
-             else active++;
+            const complaintDate = new Date(c.createdAt);
+            
+            // Only count if within the last 30 days
+            if (complaintDate >= thirtyDaysAgo) {
+              if (c.status === "Resolved" || c.status === "Rejected") {
+                resolved++;
+              } else {
+                active++;
+              }
+            }
           });
 
           setComplaintStats({
-             active, resolved, total: complaintsList.length
+             active, 
+             resolved, 
+             total: active + resolved
           });
         }
       } catch (err) {
@@ -50,7 +64,6 @@ export default function WardenOverview() {
       }
     };
     
-    // Only fetch if warden context is available
     if (user?.role === "warden") {
        fetchOverviewData();
     }
@@ -58,7 +71,6 @@ export default function WardenOverview() {
 
   const assignedCount = students.filter(s => s.roomNumber).length;
   const unassignedCount = students.filter(s => !s.roomNumber).length;
-
   return (
     <DashboardLayout role="warden" activeTab="overview">
       <div className="p-4 md:p-8 min-h-screen" style={{ background: "linear-gradient(135deg, #f0f4ff 0%, #faf5ff 50%, #f0fdf4 100%)" }}>

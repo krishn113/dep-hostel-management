@@ -44,6 +44,8 @@ export default function NoticeForm({ isOpen, onClose, onSuccess }) {
       formData.append("title", title);
       formData.append("content", content);
       formData.append("category", category);
+      formData.append("isPinned", false); // Add this if you want a default
+formData.append("priority", "normal");
       
       // Append filtered links as a stringified array
       const validLinks = links.filter((l) => l.url !== "");

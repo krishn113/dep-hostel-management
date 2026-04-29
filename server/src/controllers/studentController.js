@@ -4,6 +4,7 @@ import generatePDF from "../utils/generatePDF.js";
 import { sendGuestHouseMail } from "../utils/sendMail.js";
 import User from "../models/User.js";
 import LostFound from "../models/LostFound.js";
+import { processAndSaveFile } from "../utils/localUpload.js";
 
 // @route POST /api/student/forms/leave OR /api/hostel-leaving/apply
 export const applyHostelLeaving = async (req, res) => {
@@ -89,21 +90,26 @@ export const getMyForms = async (req, res) => {
 
 export const createPost = async (req, res) => {
   try {
+    // Process the image manually using the utility we created
+    let imageUrl = null;
+    if (req.file) {
+      imageUrl = await processAndSaveFile(req.file, 'lost-found');
+    }
 
     const post = await LostFound.create({
       title: req.body.title,
       description: req.body.description,
-      imageUrl: req.file ? req.file.path : null,
-      type: req.body.type, // lost or found
-      visibility: req.body.visibility, // global or hostel
+      imageUrl: imageUrl, // Now stores /uploads/lost-found/filename.webp
+      type: req.body.type,
+      visibility: req.body.visibility,
       contactNumber: req.body.contactNumber,
       postedBy: req.user._id,
       hostelId: req.user.hostelId
     });
 
     res.json(post);
-
   } catch (err) {
+    console.error(err);
     res.status(500).json({ error: err.message });
   }
 };

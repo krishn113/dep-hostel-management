@@ -1,7 +1,7 @@
 import express from "express";
 import { createNotice, getNotices, deleteNotice, updateNotice } from "../controllers/noticeController.js";
 import { protect as auth, allowRoles as authorize } from "../middleware/auth.js";
-import { noticeUpload as upload } from "../utils/cloudinary.js";
+import { upload } from "../utils/localUpload.js";
 
 const router = express.Router();
 

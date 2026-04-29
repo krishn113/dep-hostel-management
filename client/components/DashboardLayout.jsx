@@ -196,45 +196,37 @@ export default function DashboardLayout({ children, role }) {
               <Menu size={22} />
             </button>
 
-            {user?.hostelName && (
-              <h2 className={`text-base md:text-xl font-black tracking-tight flex items-center gap-2 truncate ${headerTextStyles}`}>
-                <Home size={18} className="text-indigo-400 shrink-0" />
-                <span className="truncate">{user.hostelName} {user.hostelType}</span>
-                <span className={`hidden sm:inline text-[10px] px-2 py-0.5 rounded-full font-bold uppercase tracking-widest shrink-0 ${isPastelRole ? "bg-white/50 text-blue-700" : "bg-indigo-100 text-indigo-600"
-                  }`}>
-                  {user?.role}
-                </span>
-              </h2>
-            )}
+          {user?.hostelName && role !== "admin" && (
+  <h2 className={`text-base md:text-xl font-black tracking-tight flex items-center gap-2 truncate ${headerTextStyles}`}>
+    <Home size={18} className="text-indigo-400 shrink-0" />
+    <span className="truncate">{user.hostelName} {user.hostelType}</span>
+  </h2>
+)}
           </div>
 
           {/* Right: profile pill OR admin label */}
           {role === "admin" ? (
             <>
-            <div className="flex items-center gap-2 bg-indigo-50 px-4 py-2 rounded-2xl border border-indigo-100 shrink-0">
-              <div className="w-9 h-9 bg-indigo-600 rounded-xl flex items-center justify-center text-white font-bold shadow-lg shadow-indigo-100 text-sm">
-                A
-              </div>
-              <div className="hidden sm:block">
-                <p className="text-[10px] font-black text-indigo-400 uppercase tracking-tighter">Role</p>
-                <p className="text-sm font-bold text-indigo-700">Admin</p>
-              </div>
-            </div>
           {/* Right: profile pill */}
-          <div
-            onClick={() => setIsProfileModalOpen(true)}
-            className={`flex items-center gap-3 px-3 py-2 rounded-2xl border cursor-pointer transition shrink-0 ${isCaretaker ? "bg-white/40 border-blue-200 hover:bg-white/60" : "bg-slate-100 border-slate-200 hover:bg-slate-200"
-              }`}
-          >
-            <div className="text-right hidden sm:block">
-              <p className={`text-[10px] font-black uppercase tracking-tighter ${isCaretaker ? "text-slate-400" : "text-slate-400"}`}>
-                {user?.role === "caretaker" || user?.role === "warden"
-                  ? `${user?.role} ${user?.hostelName || ""}`.trim()
-                  : user?.role}
-              </p>
-              <p className={`text-sm font-bold ${headerTextStyles}`}>{user?.name}</p>
-            </div>
-            </div>
+<div
+  onClick={() => setIsProfileModalOpen(true)}
+  className={`flex items-center gap-3 px-3 py-2 rounded-2xl border cursor-pointer transition shrink-0 ${
+    isPastelRole ? "bg-white/40 border-blue-200 hover:bg-white/60" : "bg-slate-100 border-slate-200 hover:bg-slate-200"
+  }`}
+>
+  <div className="text-right hidden sm:block">
+    <p className={`text-[10px] font-black uppercase tracking-tighter ${isPastelRole ? "text-slate-400" : "text-indigo-400"}`}>
+      {user?.role === "caretaker" || user?.role === "warden"
+        ? `${user?.role} ${user?.hostelName || ""}`.trim()
+        : user?.role}
+    </p>
+    <p className={`text-sm font-bold ${headerTextStyles}`}>{user?.name}</p>
+  </div>
+
+  <div className="w-9 h-9 md:w-10 md:h-10 bg-indigo-600 rounded-xl flex items-center justify-center text-white font-bold shadow-lg shadow-indigo-100 text-sm">
+    {user?.name?.[0] || "A"}
+  </div>
+</div>
             </>
           ) : (
             <div

@@ -1,7 +1,7 @@
 import express from "express";
 import { protect, allowRoles } from "../middleware/auth.js";
 import { applyHostelLeaving, bookGuestHouse, getMyForms, createPost, getPosts, markResolved } from "../controllers/studentController.js";
-import upload from "../utils/cloudinary.js";
+import { upload } from "../utils/localUpload.js";
 
 const router = express.Router();
 

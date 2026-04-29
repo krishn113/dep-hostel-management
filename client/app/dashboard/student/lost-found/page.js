@@ -20,6 +20,7 @@ export default function LostFoundPage() {
   const [currentUserId, setCurrentUserId] = useState(null);
   const [imageFile, setImageFile] = useState(null);
   const [imagePreview, setImagePreview] = useState(null);
+  const [showResolveConfirm, setShowResolveConfirm] = useState(null);
   const [isUploading, setIsUploading] = useState(false);
   const [form, setForm] = useState({
     title: "",
@@ -116,16 +117,30 @@ export default function LostFoundPage() {
   };
 
   const markResolved = async (id) => {
-    try {
-      await API.put(`/student/lost-found/${id}/resolve`);
-      fetchPosts();
-    } catch (err) {
-      console.log(err);
-    }
-  };
+  // If id is passed but showResolveConfirm is null, it's the first click (show modal)
+  if (!showResolveConfirm) {
+    setShowResolveConfirm(id);
+    return;
+  }
+
+  try {
+    await API.put(`/student/lost-found/${id}/resolve`);
+    setShowResolveConfirm(null); // Close modal
+    fetchPosts();
+  } catch (err) {
+    console.log(err);
+  }
+};
 
   const filteredPosts = posts
-    .filter((p) => p.status !== "resolved")
+    .filter((p) =>{
+    // New Logic: If activeTab is 'archived', show only resolved
+    if (activeTab === "archived") return p.status === "resolved";
+    
+    // Otherwise, show only active posts for other tabs
+    if (activeTab === "mine") return p.postedBy?._id === currentUserId && p.status !== "resolved";
+    return p.type === activeTab && p.status !== "resolved";
+  })
     .filter((p) => {
       if (activeTab === "mine") return p.postedBy?._id === currentUserId;
       return p.type === activeTab;
@@ -365,6 +380,21 @@ export default function LostFoundPage() {
                 {myPostsCount}
               </span>
             </button>
+            {/* Add this button after the "My Posts" button */}
+<button
+  onClick={() => setActiveTab("archived")}
+  className={`flex-1 sm:flex-none flex items-center justify-center min-w-[90px] gap-2 px-6 py-3 rounded-xl font-black text-[10px] sm:text-xs uppercase tracking-widest transition-all ${
+    activeTab === "archived"
+      ? "bg-slate-800 text-white shadow-sm"
+      : "text-slate-400 hover:text-slate-600"
+  }`}
+>
+  <Clock size={14} />
+  Archive
+  <span className="ml-1 px-2 py-0.5 rounded-full text-[10px] bg-slate-200 text-slate-500">
+    {posts.filter(p => p.status === "resolved").length}
+  </span>
+</button>
           </div>
 
           {/* Right: My Posts filter + Search + Date Filter */}
@@ -480,7 +510,11 @@ export default function LostFoundPage() {
                     <div className="flex flex-col md:flex-row gap-6">
                        {p.imageUrl && (
                          <div className="w-full md:w-48 h-48 rounded-2xl overflow-hidden border-2 border-white shadow-sm shrink-0">
-                            <img src={p.imageUrl} alt={p.title} className="w-full h-full object-cover" />
+                            <img 
+  src={`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'}${p.imageUrl}`} 
+  alt={p.title} 
+  className="w-full h-full object-cover" 
+/>
                          </div>
                        )}
                        <p className="text-slate-600 text-sm leading-relaxed flex-1">
@@ -513,6 +547,33 @@ export default function LostFoundPage() {
           )}
         </div>
       </div>
+      {showResolveConfirm && (
+  <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-300">
+    <div className="bg-white rounded-[2.5rem] p-8 max-w-sm w-full shadow-2xl border border-slate-100 text-center scale-in-center">
+      <div className="w-16 h-16 bg-emerald-50 text-emerald-500 rounded-full flex items-center justify-center mx-auto mb-4">
+        <CheckCircle2 size={32} />
+      </div>
+      <h3 className="text-xl font-black text-slate-900 uppercase">Mark as Resolved?</h3>
+      <p className="text-slate-500 text-sm font-bold mt-2 leading-relaxed">
+        This item will be moved to the <span className="text-indigo-600">Archive</span>. This action cannot be undone.
+      </p>
+      <div className="grid grid-cols-2 gap-3 mt-8">
+        <button 
+          onClick={() => setShowResolveConfirm(null)}
+          className="py-4 rounded-2xl font-black text-[10px] uppercase tracking-widest text-slate-400 hover:bg-slate-50 transition-colors"
+        >
+          Cancel
+        </button>
+        <button 
+          onClick={() => markResolved(showResolveConfirm)}
+          className="py-4 bg-emerald-500 hover:bg-emerald-600 text-white rounded-2xl font-black text-[10px] uppercase tracking-widest shadow-lg shadow-emerald-100 transition-all"
+        >
+          Yes, Resolve
+        </button>
+      </div>
+    </div>
+  </div>
+)}
     </DashboardLayout>
   );
 }

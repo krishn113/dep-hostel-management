@@ -1,10 +1,15 @@
 "use client";
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useState, useEffect, Suspense } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useAuth } from "../../context/AuthContext";
 import toast from "react-hot-toast";
 
-export default function Signup() {
+// We split the form into its own component to use useSearchParams safely
+function SignupForm() {
+  const searchParams = useSearchParams();
+  const reason = searchParams.get("reason");
+  const router = useRouter();
+  const { sendOtp, setTempUser } = useAuth();
 
   const [form, setForm] = useState({
     name: "",
@@ -14,23 +19,27 @@ export default function Signup() {
     entryNumber: "",
     degreeType: "",
     phone: "",
-    gender: ""
+    gender: "",
   });
 
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
-  const { sendOtp, setTempUser } = useAuth();
-  const router = useRouter();
+  // Effect to handle the "Not Registered" alert from Google Auth
+  useEffect(() => {
+    if (reason === "not_registered") {
+      toast.error("Account not found! Please complete your registration to continue.", {
+        duration: 5000,
+        icon: "👋",
+      });
+    }
+  }, [reason]);
 
   const update = (key, value) => {
     setForm({ ...form, [key]: value });
   };
 
-  
-
   const validate = () => {
-
     const {
       name,
       email,
@@ -39,91 +48,87 @@ export default function Signup() {
       entryNumber,
       degreeType,
       phone,
-      gender
+      gender,
     } = form;
 
     if (!name.trim()) {
       toast.error("Name required");
       return false;
     }
-
     if (!email.endsWith("@iitrpr.ac.in")) {
       toast.error("Use IIT Ropar email");
       return false;
     }
-
     if (password.length < 6) {
       toast.error("Password must be at least 6 characters");
       return false;
     }
-
     if (!/^[0-9]{10}$/.test(phone)) {
       toast.error("Enter valid 10 digit phone number");
       return false;
     }
-
     if (!entryNumber.trim()) {
       toast.error("Entry number required");
       return false;
     }
-
     if (!/^\d{4}$/.test(year)) {
       toast.error("Enter valid admission year (e.g. 2023)");
       return false;
     }
-
     if (year < 2000 || year > new Date().getFullYear()) {
       toast.error("Invalid admission year");
       return false;
     }
-
     if (!year) {
       toast.error("Select year");
       return false;
     }
-
     if (!degreeType) {
       toast.error("Select degree");
       return false;
     }
-
     if (!gender) {
       toast.error("Select gender");
       return false;
     }
-
     return true;
   };
 
   const handle = async () => {
-
     if (!validate()) return;
 
     setLoading(true);
-
-    setTempUser(form);
-
-    const res = await sendOtp(form.email);
-
-    setLoading(false);
-
-    if (res?.success) router.push("/otp");
-    else toast.error("Failed to send OTP");
-
+    try {
+      setTempUser(form);
+      const res = await sendOtp(form.email);
+      if (res?.success) {
+        router.push("/otp");
+      } else {
+        toast.error("Failed to send OTP");
+      }
+    } catch (err) {
+      toast.error("An error occurred. Please try again.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
     <div
       className="min-h-screen flex items-center justify-center py-10 px-4 relative"
-      style={{ backgroundImage: "url('/sab.jpg')", backgroundSize: "cover", backgroundPosition: "center", backgroundRepeat: "no-repeat" }}
+      style={{
+        backgroundImage: "url('/sab.jpg')",
+        backgroundSize: "cover",
+        backgroundPosition: "center",
+        backgroundRepeat: "no-repeat",
+      }}
     >
       <div className="absolute inset-0 bg-slate-900/50"></div>
 
       <div className="w-full max-w-lg bg-white/20 backdrop-blur-md border border-white/30 p-6 rounded-2xl shadow-xl relative z-10">
-
         {/* Logo */}
         <div className="flex justify-center mb-5">
-          <img src="/iitrpr-logo.png" className="h-14" />
+          <img src="/iitrpr-logo.png" className="h-14" alt="Logo" />
         </div>
 
         <h2 className="text-2xl font-bold text-center text-white mb-6">
@@ -131,7 +136,6 @@ export default function Signup() {
         </h2>
 
         <div className="space-y-3">
-
           {/* Name */}
           <input
             placeholder="Full Name"
@@ -157,7 +161,6 @@ export default function Signup() {
               value={form.password}
               onChange={(e) => update("password", e.target.value)}
             />
-
             <button
               type="button"
               onClick={() => setShowPassword(!showPassword)}
@@ -169,7 +172,6 @@ export default function Signup() {
 
           {/* Two Column Section */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-
             <input
               placeholder="Phone"
               className="p-3 border rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none"
@@ -215,7 +217,6 @@ export default function Signup() {
               <option>Male</option>
               <option>Female</option>
             </select>
-
           </div>
 
           {/* Submit */}
@@ -226,7 +227,6 @@ export default function Signup() {
           >
             {loading ? "Sending OTP..." : "Send OTP"}
           </button>
-
         </div>
 
         <p className="text-center text-sm text-white mt-6">
@@ -238,8 +238,16 @@ export default function Signup() {
             Login
           </span>
         </p>
-
       </div>
     </div>
+  );
+}
+
+// Main Export with Suspense Boundary
+export default function Signup() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-slate-900 flex items-center justify-center text-white">Loading...</div>}>
+      <SignupForm />
+    </Suspense>
   );
 }

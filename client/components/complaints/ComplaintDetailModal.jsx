@@ -310,16 +310,7 @@ const handleNotAvailable = async () => {
 
         {/* Footer */}
         <div className="p-6 bg-slate-50 border-t border-slate-100 space-y-4">
-          {!isResolved && (
-            <button 
-              onClick={handleResolve}
-              disabled={loading}
-              className="w-full py-3 bg-emerald-50 text-emerald-600 border border-emerald-100 rounded-2xl font-black text-[10px] uppercase tracking-[0.2em] flex items-center justify-center gap-2 hover:bg-emerald-100 transition-all active:scale-[0.98]"
-            >
-              <CheckCircle size={14} /> Mark as Resolved & Close
-            </button>
-          )}
-
+          
         {(complaint.status === "Get Slot" && (isEditing || !hasSubmittedSlots)) && (
           <div className="p-6 bg-slate-50 border-t border-slate-100 flex flex-col gap-4">
             <div className="flex justify-between items-center">

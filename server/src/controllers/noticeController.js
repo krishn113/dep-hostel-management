@@ -1,9 +1,11 @@
 import Notice from "../models/Notice.js";
+import { processAndSaveFile } from "../utils/localUpload.js";
 
 export const createNotice = async (req, res) => {
     try {
-        const { title, content, links, attachments, category, isPinned } = req.body;
+        const { title, content, category, isPinned } = req.body;
         
+        // Handle Links Parsing
         let parsedLinks = [];
         if (req.body.links) {
             try {
@@ -13,12 +15,20 @@ export const createNotice = async (req, res) => {
             }
         }
 
-        const fileAttachments = req.files ? req.files.map(file => ({
-            fileName: file.originalname,
-            fileType: file.mimetype,
-            // If storing locally, save the path. If using cloud storage, use the cloud URL.
-            url: file.path 
-        })) : [];
+        // Handle File Attachments for Local Storage
+        const fileAttachments = [];
+        if (req.files && req.files.length > 0) {
+            for (const file of req.files) {
+                // Process each file (Resize if image, save as-is if PDF)
+                const savedPath = await processAndSaveFile(file, 'notices');
+                
+                fileAttachments.push({
+                    fileName: file.originalname,
+                    fileType: file.mimetype,
+                    url: savedPath // This now stores the local path like /uploads/notices/...
+                });
+            }
+        }
 
         // Author and Hostel are pulled from the 'auth' middleware
         const newNotice = new Notice({
@@ -35,6 +45,7 @@ export const createNotice = async (req, res) => {
         await newNotice.save();
         res.status(201).json({ msg: "Notice posted successfully", notice: newNotice });
     } catch (error) {
+        console.error("Notice Creation Error:", error);
         res.status(500).json({ msg: "Error creating notice", error: error.message });
     }
 };
@@ -60,10 +71,10 @@ export const getNotices = async (req, res) => {
     }
 
     const notices = await Notice.find(query)
-      .select("title content category isPinned createdAt attachments links author") // include author
+      .select("title content category isPinned createdAt attachments links author")
       .populate("author", "name role")
       .sort({ isPinned: -1, createdAt: -1 })
-      .lean(); // 🔥 important
+      .lean();
 
     res.status(200).json(notices);
   } catch (error) {

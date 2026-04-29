@@ -13,6 +13,12 @@ export default function Login() {
   const { setUser } = useAuth();
   const router = useRouter();
 
+  const handleGoogleLogin = () => {
+    // We redirect directly to the backend route
+    const backendUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";
+    window.location.href = `${backendUrl}/auth/google`;
+  };
+
 const handle = async () => {
   if (!email.endsWith("@iitrpr.ac.in")) {
     toast.error("Please use your IIT Ropar email");
@@ -115,6 +121,22 @@ const handle = async () => {
             className="w-full bg-indigo-600 hover:bg-indigo-700 transition text-white py-3 rounded-lg font-medium disabled:opacity-50"
           >
             {loading ? "Logging in..." : "Login"}
+          </button>
+
+          {/* OR DIVIDER */}
+          <div className="flex items-center my-4">
+            <div className="flex-grow border-t border-white/30"></div>
+            <span className="px-3 text-white text-xs font-medium uppercase">Or</span>
+            <div className="flex-grow border-t border-white/30"></div>
+          </div>
+
+          {/* GOOGLE LOGIN BUTTON */}
+          <button
+            onClick={handleGoogleLogin}
+            className="w-full bg-white hover:bg-slate-100 transition text-slate-800 py-3 rounded-lg font-medium flex items-center justify-center gap-3 shadow-md"
+          >
+            <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google" className="w-5 h-5" />
+            Continue with Google
           </button>
 
 

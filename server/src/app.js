@@ -11,6 +11,8 @@ import wardenRoutes from "./routes/wardenRoutes.js";
 import technicianVisitRoutes from "./routes/techVisit.js";
 import path from "path";
 import { fileURLToPath } from "url";
+import passport from "passport";
+import "./config/passport.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -20,6 +22,8 @@ import noticeRoutes from "./routes/noticeRoutes.js";
 dotenv.config();
 
 const app = express();
+
+app.use(passport.initialize());
 
 // Global Logger for debugging API calls
 app.use((req, res, next) => {
@@ -48,8 +52,9 @@ app.use(cors({
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 
-// Serve static files from the 'uploads' directory
-app.use("/uploads", express.static(path.join(__dirname, "../uploads")));
+// Serve the uploads folder as static
+const uploadsPath = path.join(process.cwd(), 'public', 'uploads');
+app.use('/uploads', express.static(uploadsPath));
 
 // Create a directory for PDFs if it doesn't exist
 const fs = await import("fs");

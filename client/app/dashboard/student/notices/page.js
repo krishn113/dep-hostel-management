@@ -9,7 +9,7 @@ import {
   Pin, RotateCcw, Filter, Megaphone, Zap, CheckCircle2, EyeOff, ChevronDown, CalendarRange
 } from "lucide-react";
 
-const CATEGORIES = ["All", "Academic", "Maintenance", "Events", "Other"];
+const CATEGORIES = ["Academic", "Maintenance", "Events"];
 
 export default function StudentNoticeBoard() {
   const { user } = useAuth();
@@ -346,7 +346,11 @@ export default function StudentNoticeBoard() {
                     {notice.attachments?.map((file, idx) => (
                       <a
                         key={idx}
-                        href={file.url.startsWith("http") ? file.url : `${(process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api").replace("/api", "")}${file.url}`}
+                     href={
+  file.url.startsWith("http") 
+    ? file.url 
+    : `${(process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000").replace("/api", "")}${file.url}`
+}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="text-xs bg-slate-100 hover:bg-slate-200 px-3 py-1 rounded-lg font-medium"
